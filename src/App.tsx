@@ -18,7 +18,7 @@ import { useCartStore } from './store/useCartStore';
 
 export function App() {
   const [activeTab, setActiveTab] = useState('pos');
-  const [selectedCategoryId, setSelectedCategoryId] = useState('cat-lunch');
+  const [selectedCategoryId, setSelectedCategoryId] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
