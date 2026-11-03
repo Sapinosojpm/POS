@@ -7,6 +7,9 @@ import { Header } from './components/Header';
 import { ProductCatalog } from './components/ProductCatalog';
 import { CartView } from './components/CartView';
 import { InventoryView } from './components/InventoryView';
+import { OrderHistoryView } from './components/OrderHistoryView';
+import { ShiftScheduleView } from './components/ShiftScheduleView';
+import { ReportsView } from './components/ReportsView';
 import { SettingsView } from './components/SettingsView';
 import { CheckoutModal } from './components/CheckoutModal';
 import { NotificationStack } from './components/NotificationStack';
@@ -116,6 +119,12 @@ export function App() {
           products={products}
           categories={categories}
         />
+      ) : activeTab === 'orders' ? (
+        <OrderHistoryView />
+      ) : activeTab === 'calendar' ? (
+        <ShiftScheduleView />
+      ) : activeTab === 'analytics' ? (
+        <ReportsView />
       ) : activeTab === 'settings' ? (
         <SettingsView />
       ) : (
