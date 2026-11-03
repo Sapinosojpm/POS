@@ -18,6 +18,7 @@ import { useCartStore } from '../store/useCartStore';
 import { printerService } from '../core/hardware/printer';
 import { toast } from '../store/useToastStore';
 import type { Order, OrderItem, PaymentMethod } from '../types';
+import { TableRowSkeleton } from './Skeleton';
 
 interface OrderWithItems extends Order {
   itemSummary?: string;
@@ -31,12 +32,23 @@ export const OrderHistoryView: React.FC = () => {
   const [paymentFilter, setPaymentFilter] = useState<'ALL' | PaymentMethod>('ALL');
   const [statusFilter] = useState<'ALL' | 'COMPLETED' | 'VOIDED'>('ALL');
   const [selectedOrder, setSelectedOrder] = useState<OrderWithItems | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     loadOrders();
   }, []);
 
+  const handlePaymentFilterChange = (method: 'ALL' | PaymentMethod) => {
+    if (paymentFilter === method) return;
+    setPaymentFilter(method);
+    setIsLoading(true);
+    setTimeout(() => {
+      setIsLoading(false);
+    }, 160);
+  };
+
   const loadOrders = async () => {
+    setIsLoading(true);
     try {
       const dbOrders = await db.orders.reverse().toArray();
       const dbItems = await db.orderItems.toArray();
@@ -195,6 +207,10 @@ export const OrderHistoryView: React.FC = () => {
       setOrders([...mappedDbOrders, ...MOCK_ORDERS]);
     } catch (err) {
       console.error('Failed to load orders:', err);
+    } finally {
+      setTimeout(() => {
+        setIsLoading(false);
+      }, 200);
     }
   };
 
@@ -372,7 +388,7 @@ export const OrderHistoryView: React.FC = () => {
             return (
               <button
                 key={method}
-                onClick={() => setPaymentFilter(method)}
+                onClick={() => handlePaymentFilterChange(method)}
                 className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap active:scale-95 ${
                   isSelected
                     ? 'bg-blue-600 text-white shadow-xs'
@@ -402,7 +418,9 @@ export const OrderHistoryView: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 text-xs">
-              {filteredOrders.length === 0 ? (
+              {isLoading ? (
+                Array.from({ length: 5 }).map((_, i) => <TableRowSkeleton key={i} />)
+              ) : filteredOrders.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="py-12 text-center text-slate-400">
                     <Receipt className="w-8 h-8 mx-auto mb-2 text-slate-300 stroke-1" />

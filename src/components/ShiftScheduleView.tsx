@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { useCartStore } from '../store/useCartStore';
 import { toast } from '../store/useToastStore';
+import { ShiftCardSkeleton } from './Skeleton';
 
 interface ShiftRosterItem {
   id: string;
@@ -26,10 +27,20 @@ interface ShiftRosterItem {
 export const ShiftScheduleView: React.FC = () => {
   const { currency } = useCartStore();
   const [selectedDayIndex, setSelectedDayIndex] = useState(2); // Tuesday (Today)
+  const [isSwitchingDay, setIsSwitchingDay] = useState(false);
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
   const [newStaffName, setNewStaffName] = useState('');
   const [newStaffRole, setNewStaffRole] = useState<'Cashier' | 'Head Cashier'>('Cashier');
   const [newShiftSlot, setNewShiftSlot] = useState<'Morning Shift' | 'Afternoon Shift' | 'Night Shift'>('Morning Shift');
+
+  const handleSelectDay = (idx: number) => {
+    if (selectedDayIndex === idx) return;
+    setSelectedDayIndex(idx);
+    setIsSwitchingDay(true);
+    setTimeout(() => {
+      setIsSwitchingDay(false);
+    }, 160);
+  };
 
   const DAYS_OF_WEEK = [
     { label: 'Sun', date: 'Nov 1' },
@@ -232,7 +243,7 @@ export const ShiftScheduleView: React.FC = () => {
       {/* Week Day Navigator Pills */}
       <div className="bg-white p-3 rounded-xl border border-slate-200 shadow-sm mb-5 shrink-0 flex items-center justify-between gap-2 overflow-x-auto">
         <button
-          onClick={() => setSelectedDayIndex((prev) => Math.max(0, prev - 1))}
+          onClick={() => handleSelectDay(Math.max(0, selectedDayIndex - 1))}
           className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-600 transition"
         >
           <ChevronLeft className="w-4 h-4" />
@@ -244,7 +255,7 @@ export const ShiftScheduleView: React.FC = () => {
             return (
               <button
                 key={day.label}
-                onClick={() => setSelectedDayIndex(idx)}
+                onClick={() => handleSelectDay(idx)}
                 className={`flex flex-col items-center py-1.5 px-4 rounded-xl transition-all ${
                   isSelected
                     ? 'bg-blue-600 text-white shadow-xs font-bold'
@@ -266,7 +277,7 @@ export const ShiftScheduleView: React.FC = () => {
         </div>
 
         <button
-          onClick={() => setSelectedDayIndex((prev) => Math.min(DAYS_OF_WEEK.length - 1, prev + 1))}
+          onClick={() => handleSelectDay(Math.min(DAYS_OF_WEEK.length - 1, selectedDayIndex + 1))}
           className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-600 transition"
         >
           <ChevronRight className="w-4 h-4" />
@@ -293,59 +304,66 @@ export const ShiftScheduleView: React.FC = () => {
           </div>
 
           <div className="space-y-3 flex-1 overflow-y-auto">
-            {morningStaff.map((staff) => (
-              <div
-                key={staff.id}
-                className="p-3 rounded-xl border border-slate-200 bg-slate-50/50 hover:bg-white hover:shadow-xs transition"
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex items-center gap-3">
-                    <img
-                      src={staff.avatar}
-                      alt={staff.staffName}
-                      className="w-10 h-10 rounded-xl object-cover ring-1 ring-slate-200"
-                    />
-                    <div>
-                      <h4 className="font-bold text-xs text-slate-900">{staff.staffName}</h4>
-                      <span className="inline-block px-1.5 py-0.2 bg-blue-50 text-blue-600 font-bold text-[10px] rounded mt-0.5">
-                        {staff.role}
+            {isSwitchingDay ? (
+              <div className="space-y-3">
+                <ShiftCardSkeleton />
+                <ShiftCardSkeleton />
+              </div>
+            ) : (
+              morningStaff.map((staff) => (
+                <div
+                  key={staff.id}
+                  className="p-3 rounded-xl border border-slate-200 bg-slate-50/50 hover:bg-white hover:shadow-xs transition"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <img
+                        src={staff.avatar}
+                        alt={staff.staffName}
+                        className="w-10 h-10 rounded-xl object-cover ring-1 ring-slate-200"
+                      />
+                      <div>
+                        <h4 className="font-bold text-xs text-slate-900">{staff.staffName}</h4>
+                        <span className="inline-block px-1.5 py-0.2 bg-blue-50 text-blue-600 font-bold text-[10px] rounded mt-0.5">
+                          {staff.role}
+                        </span>
+                      </div>
+                    </div>
+
+                    <span
+                      className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                        staff.status === 'ON_DUTY'
+                          ? 'bg-emerald-100 text-emerald-800'
+                          : 'bg-slate-200 text-slate-700'
+                      }`}
+                    >
+                      {staff.status === 'ON_DUTY' ? 'On Duty' : 'Completed'}
+                    </span>
+                  </div>
+
+                  <div className="mt-2.5 pt-2 border-t border-slate-200/60 text-[11px] text-slate-500 space-y-1">
+                    <div className="flex items-center justify-between">
+                      <span className="flex items-center gap-1">
+                        <Monitor className="w-3 h-3 text-slate-400" />
+                        {staff.terminal}
                       </span>
                     </div>
-                  </div>
-
-                  <span
-                    className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                      staff.status === 'ON_DUTY'
-                        ? 'bg-emerald-100 text-emerald-800'
-                        : 'bg-slate-200 text-slate-700'
-                    }`}
-                  >
-                    {staff.status === 'ON_DUTY' ? 'On Duty' : 'Completed'}
-                  </span>
-                </div>
-
-                <div className="mt-2.5 pt-2 border-t border-slate-200/60 text-[11px] text-slate-500 space-y-1">
-                  <div className="flex items-center justify-between">
-                    <span className="flex items-center gap-1">
-                      <Monitor className="w-3 h-3 text-slate-400" />
-                      {staff.terminal}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between font-medium">
-                    <span className="flex items-center gap-1">
-                      <Banknote className="w-3 h-3 text-slate-400" />
-                      Float: {currency}{staff.floatAmount.toFixed(2)}
-                    </span>
-                    <button
-                      onClick={() => handleToggleStatus(staff.id)}
-                      className="text-blue-600 hover:text-blue-800 font-bold text-[11px]"
-                    >
-                      {staff.status === 'ON_DUTY' ? 'End Shift' : 'Clock In'}
-                    </button>
+                    <div className="flex items-center justify-between font-medium">
+                      <span className="flex items-center gap-1">
+                        <Banknote className="w-3 h-3 text-slate-400" />
+                        Float: {currency}{staff.floatAmount.toFixed(2)}
+                      </span>
+                      <button
+                        onClick={() => handleToggleStatus(staff.id)}
+                        className="text-blue-600 hover:text-blue-800 font-bold text-[11px]"
+                      >
+                        {staff.status === 'ON_DUTY' ? 'End Shift' : 'Clock In'}
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </div>
 
@@ -367,53 +385,60 @@ export const ShiftScheduleView: React.FC = () => {
           </div>
 
           <div className="space-y-3 flex-1 overflow-y-auto">
-            {afternoonStaff.map((staff) => (
-              <div
-                key={staff.id}
-                className="p-3 rounded-xl border border-slate-200 bg-slate-50/50 hover:bg-white hover:shadow-xs transition"
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex items-center gap-3">
-                    <img
-                      src={staff.avatar}
-                      alt={staff.staffName}
-                      className="w-10 h-10 rounded-xl object-cover ring-1 ring-slate-200"
-                    />
-                    <div>
-                      <h4 className="font-bold text-xs text-slate-900">{staff.staffName}</h4>
-                      <span className="inline-block px-1.5 py-0.2 bg-blue-50 text-blue-600 font-bold text-[10px] rounded mt-0.5">
-                        {staff.role}
+            {isSwitchingDay ? (
+              <div className="space-y-3">
+                <ShiftCardSkeleton />
+                <ShiftCardSkeleton />
+              </div>
+            ) : (
+              afternoonStaff.map((staff) => (
+                <div
+                  key={staff.id}
+                  className="p-3 rounded-xl border border-slate-200 bg-slate-50/50 hover:bg-white hover:shadow-xs transition"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <img
+                        src={staff.avatar}
+                        alt={staff.staffName}
+                        className="w-10 h-10 rounded-xl object-cover ring-1 ring-slate-200"
+                      />
+                      <div>
+                        <h4 className="font-bold text-xs text-slate-900">{staff.staffName}</h4>
+                        <span className="inline-block px-1.5 py-0.2 bg-blue-50 text-blue-600 font-bold text-[10px] rounded mt-0.5">
+                          {staff.role}
+                        </span>
+                      </div>
+                    </div>
+
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                      Upcoming
+                    </span>
+                  </div>
+
+                  <div className="mt-2.5 pt-2 border-t border-slate-200/60 text-[11px] text-slate-500 space-y-1">
+                    <div className="flex items-center justify-between">
+                      <span className="flex items-center gap-1">
+                        <Monitor className="w-3 h-3 text-slate-400" />
+                        {staff.terminal}
                       </span>
                     </div>
-                  </div>
-
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
-                    Upcoming
-                  </span>
-                </div>
-
-                <div className="mt-2.5 pt-2 border-t border-slate-200/60 text-[11px] text-slate-500 space-y-1">
-                  <div className="flex items-center justify-between">
-                    <span className="flex items-center gap-1">
-                      <Monitor className="w-3 h-3 text-slate-400" />
-                      {staff.terminal}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between font-medium">
-                    <span className="flex items-center gap-1">
-                      <Banknote className="w-3 h-3 text-slate-400" />
-                      Float: {currency}{staff.floatAmount.toFixed(2)}
-                    </span>
-                    <button
-                      onClick={() => handleToggleStatus(staff.id)}
-                      className="text-blue-600 hover:text-blue-800 font-bold text-[11px]"
-                    >
-                      {staff.status === 'ON_DUTY' ? 'End Shift' : 'Clock In'}
-                    </button>
+                    <div className="flex items-center justify-between font-medium">
+                      <span className="flex items-center gap-1">
+                        <Banknote className="w-3 h-3 text-slate-400" />
+                        Float: {currency}{staff.floatAmount.toFixed(2)}
+                      </span>
+                      <button
+                        onClick={() => handleToggleStatus(staff.id)}
+                        className="text-blue-600 hover:text-blue-800 font-bold text-[11px]"
+                      >
+                        {staff.status === 'ON_DUTY' ? 'End Shift' : 'Clock In'}
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </div>
 
@@ -435,53 +460,59 @@ export const ShiftScheduleView: React.FC = () => {
           </div>
 
           <div className="space-y-3 flex-1 overflow-y-auto">
-            {nightStaff.map((staff) => (
-              <div
-                key={staff.id}
-                className="p-3 rounded-xl border border-slate-200 bg-slate-50/50 hover:bg-white hover:shadow-xs transition"
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex items-center gap-3">
-                    <img
-                      src={staff.avatar}
-                      alt={staff.staffName}
-                      className="w-10 h-10 rounded-xl object-cover ring-1 ring-slate-200"
-                    />
-                    <div>
-                      <h4 className="font-bold text-xs text-slate-900">{staff.staffName}</h4>
-                      <span className="inline-block px-1.5 py-0.2 bg-blue-50 text-blue-600 font-bold text-[10px] rounded mt-0.5">
-                        {staff.role}
+            {isSwitchingDay ? (
+              <div className="space-y-3">
+                <ShiftCardSkeleton />
+              </div>
+            ) : (
+              nightStaff.map((staff) => (
+                <div
+                  key={staff.id}
+                  className="p-3 rounded-xl border border-slate-200 bg-slate-50/50 hover:bg-white hover:shadow-xs transition"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <img
+                        src={staff.avatar}
+                        alt={staff.staffName}
+                        className="w-10 h-10 rounded-xl object-cover ring-1 ring-slate-200"
+                      />
+                      <div>
+                        <h4 className="font-bold text-xs text-slate-900">{staff.staffName}</h4>
+                        <span className="inline-block px-1.5 py-0.2 bg-blue-50 text-blue-600 font-bold text-[10px] rounded mt-0.5">
+                          {staff.role}
+                        </span>
+                      </div>
+                    </div>
+
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-600 border border-slate-200">
+                      Scheduled
+                    </span>
+                  </div>
+
+                  <div className="mt-2.5 pt-2 border-t border-slate-200/60 text-[11px] text-slate-500 space-y-1">
+                    <div className="flex items-center justify-between">
+                      <span className="flex items-center gap-1">
+                        <Monitor className="w-3 h-3 text-slate-400" />
+                        {staff.terminal}
                       </span>
                     </div>
-                  </div>
-
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-600 border border-slate-200">
-                    Scheduled
-                  </span>
-                </div>
-
-                <div className="mt-2.5 pt-2 border-t border-slate-200/60 text-[11px] text-slate-500 space-y-1">
-                  <div className="flex items-center justify-between">
-                    <span className="flex items-center gap-1">
-                      <Monitor className="w-3 h-3 text-slate-400" />
-                      {staff.terminal}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between font-medium">
-                    <span className="flex items-center gap-1">
-                      <Banknote className="w-3 h-3 text-slate-400" />
-                      Float: {currency}{staff.floatAmount.toFixed(2)}
-                    </span>
-                    <button
-                      onClick={() => handleToggleStatus(staff.id)}
-                      className="text-blue-600 hover:text-blue-800 font-bold text-[11px]"
-                    >
-                      {staff.status === 'ON_DUTY' ? 'End Shift' : 'Clock In'}
-                    </button>
+                    <div className="flex items-center justify-between font-medium">
+                      <span className="flex items-center gap-1">
+                        <Banknote className="w-3 h-3 text-slate-400" />
+                        Float: {currency}{staff.floatAmount.toFixed(2)}
+                      </span>
+                      <button
+                        onClick={() => handleToggleStatus(staff.id)}
+                        className="text-blue-600 hover:text-blue-800 font-bold text-[11px]"
+                      >
+                        {staff.status === 'ON_DUTY' ? 'End Shift' : 'Clock In'}
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </div>
       </div>

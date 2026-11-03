@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import { Plus, ChevronLeft, ChevronRight, LayoutGrid } from 'lucide-react';
 import type { Product, Category } from '../types';
 import { useCartStore } from '../store/useCartStore';
@@ -21,6 +21,16 @@ export const ProductCatalog: React.FC<ProductCatalogProps> = ({
 }) => {
   const { items, addItem, currency } = useCartStore();
   const categoryScrollRef = useRef<HTMLDivElement>(null);
+  const [isSwitching, setIsSwitching] = useState(false);
+
+  const handleSelectCategory = (catId: string) => {
+    if (catId === selectedCategoryId) return;
+    setIsSwitching(true);
+    setSelectedCategoryId(catId);
+    setTimeout(() => {
+      setIsSwitching(false);
+    }, 120);
+  };
 
   const scrollCategories = (direction: 'left' | 'right') => {
     if (categoryScrollRef.current) {
@@ -59,7 +69,7 @@ export const ProductCatalog: React.FC<ProductCatalogProps> = ({
         >
           {/* "ALL MENU" BUTTON */}
           <button
-            onClick={() => setSelectedCategoryId('all')}
+            onClick={() => handleSelectCategory('all')}
             className={`p-3 rounded-xl text-left transition-all flex flex-col justify-between h-[72px] border snap-start active:scale-95 ${
               selectedCategoryId === 'all'
                 ? 'bg-blue-600 text-white border-blue-600 shadow-md shadow-blue-500/20'
@@ -99,7 +109,7 @@ export const ProductCatalog: React.FC<ProductCatalogProps> = ({
               return (
                 <button
                   key={cat.id}
-                  onClick={() => setSelectedCategoryId(cat.id)}
+                  onClick={() => handleSelectCategory(cat.id)}
                   className={`p-3 rounded-xl text-left transition-all flex flex-col justify-between h-[72px] border snap-start active:scale-95 ${
                     isActive
                       ? 'bg-blue-600 text-white border-blue-600 shadow-md shadow-blue-500/20'
@@ -170,8 +180,8 @@ export const ProductCatalog: React.FC<ProductCatalogProps> = ({
 
       {/* Product Cards Grid (3 Columns) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-        {isLoading ? (
-          Array.from({ length: 9 }).map((_, i) => <ProductCardSkeleton key={i} />)
+        {isLoading || isSwitching ? (
+          Array.from({ length: 6 }).map((_, i) => <ProductCardSkeleton key={i} />)
         ) : (
           filteredProducts.map((prod) => {
             const qty = getItemQuantity(prod.id);
