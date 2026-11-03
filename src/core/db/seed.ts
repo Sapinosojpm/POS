@@ -1,0 +1,361 @@
+import { db } from './index';
+import type { Category, Product, Shift } from '../../types';
+
+export const RESTOE_CATEGORIES: Category[] = [
+  {
+    id: 'cat-breakfast',
+    name: 'Breakfast',
+    image: 'https://images.unsplash.com/photo-1525351484163-7529414344d8?w=120&auto=format&fit=crop&q=80',
+  },
+  {
+    id: 'cat-lunch',
+    name: 'Lunch',
+    image: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=120&auto=format&fit=crop&q=80',
+  },
+  {
+    id: 'cat-dinner',
+    name: 'Dinner',
+    image: 'https://images.unsplash.com/photo-1544025162-d76694265947?w=120&auto=format&fit=crop&q=80',
+  },
+  {
+    id: 'cat-soup',
+    name: 'Soup',
+    image: 'https://images.unsplash.com/photo-1547592166-23ac45744acd?w=120&auto=format&fit=crop&q=80',
+  },
+  {
+    id: 'cat-desserts',
+    name: 'Desserts',
+    image: 'https://images.unsplash.com/photo-1551024709-8f23befc6f87?w=120&auto=format&fit=crop&q=80',
+  },
+  {
+    id: 'cat-sidedish',
+    name: 'Side Dish',
+    image: 'https://images.unsplash.com/photo-1573080496219-bb080dd4f877?w=120&auto=format&fit=crop&q=80',
+  },
+  {
+    id: 'cat-appetizer',
+    name: 'Appetizer',
+    image: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=120&auto=format&fit=crop&q=80',
+  },
+  {
+    id: 'cat-beverages',
+    name: 'Beverages',
+    image: 'https://images.unsplash.com/photo-1517256064527-09c73fc73e38?w=120&auto=format&fit=crop&q=80',
+  },
+];
+
+export const RESTOE_PRODUCTS: Product[] = [
+  // --- LUNCH ---
+  {
+    id: 'prod-001',
+    name: 'Pasta Bolognese',
+    barcode: '480000000001',
+    sku: 'LUN-001',
+    categoryId: 'cat-lunch',
+    price: 50.5,
+    cost: 30,
+    stock: 12,
+    image: 'https://images.unsplash.com/photo-1621996346565-e3d5d6281691?w=200&auto=format&fit=crop&q=80',
+  },
+  {
+    id: 'prod-002',
+    name: 'Spicy Fried Chicken',
+    barcode: '480000000002',
+    sku: 'LUN-002',
+    categoryId: 'cat-lunch',
+    price: 45.7,
+    cost: 25,
+    stock: 15,
+    image: 'https://images.unsplash.com/photo-1569058242253-92a9c755a0ec?w=200&auto=format&fit=crop&q=80',
+  },
+  {
+    id: 'prod-003',
+    name: 'Grilled Steak',
+    barcode: '480000000003',
+    sku: 'LUN-003',
+    categoryId: 'cat-lunch',
+    price: 80.0,
+    cost: 50,
+    stock: 8,
+    image: 'https://images.unsplash.com/photo-1544025162-d76694265947?w=200&auto=format&fit=crop&q=80',
+  },
+  {
+    id: 'prod-004',
+    name: 'Fish And Chips',
+    barcode: '480000000004',
+    sku: 'LUN-004',
+    categoryId: 'cat-lunch',
+    price: 90.4,
+    cost: 55,
+    stock: 10,
+    image: 'https://images.unsplash.com/photo-1579208030886-b937da0925dc?w=200&auto=format&fit=crop&q=80',
+  },
+  {
+    id: 'prod-005',
+    name: 'Beef Bourguignon',
+    barcode: '480000000005',
+    sku: 'LUN-005',
+    categoryId: 'cat-lunch',
+    price: 75.5,
+    cost: 45,
+    stock: 7,
+    image: 'https://images.unsplash.com/photo-1534939561126-855b8675edd7?w=200&auto=format&fit=crop&q=80',
+  },
+  {
+    id: 'prod-006',
+    name: 'Spaghetti Carbonara',
+    barcode: '480000000006',
+    sku: 'LUN-006',
+    categoryId: 'cat-lunch',
+    price: 35.3,
+    cost: 20,
+    stock: 14,
+    image: 'https://images.unsplash.com/photo-1612874742237-6526221588e3?w=200&auto=format&fit=crop&q=80',
+  },
+  {
+    id: 'prod-007',
+    name: 'Ratatouille',
+    barcode: '480000000007',
+    sku: 'LUN-007',
+    categoryId: 'cat-lunch',
+    price: 26.7,
+    cost: 15,
+    stock: 12,
+    image: 'https://images.unsplash.com/photo-1572449043416-55f4685c9bb7?w=200&auto=format&fit=crop&q=80',
+  },
+  {
+    id: 'prod-008',
+    name: 'Kimchi Jjigae',
+    barcode: '480000000008',
+    sku: 'LUN-008',
+    categoryId: 'cat-lunch',
+    price: 45.7,
+    cost: 25,
+    stock: 9,
+    image: 'https://images.unsplash.com/photo-1583032015879-c5c64c180907?w=200&auto=format&fit=crop&q=80',
+  },
+  {
+    id: 'prod-009',
+    name: 'Tofu Scramble',
+    barcode: '480000000009',
+    sku: 'LUN-009',
+    categoryId: 'cat-lunch',
+    price: 85.6,
+    cost: 45,
+    stock: 11,
+    image: 'https://images.unsplash.com/photo-1540420773420-3366772f4999?w=200&auto=format&fit=crop&q=80',
+  },
+
+  // --- SIDE DISH ---
+  {
+    id: 'prod-sd-01',
+    name: 'Crispy French Fries',
+    barcode: '480000001001',
+    sku: 'SID-001',
+    categoryId: 'cat-sidedish',
+    price: 18.0,
+    cost: 8,
+    stock: 35,
+    image: 'https://images.unsplash.com/photo-1573080496219-bb080dd4f877?w=200&auto=format&fit=crop&q=80',
+  },
+  {
+    id: 'prod-sd-02',
+    name: 'Truffle Mashed Potatoes',
+    barcode: '480000001002',
+    sku: 'SID-002',
+    categoryId: 'cat-sidedish',
+    price: 22.5,
+    cost: 11,
+    stock: 20,
+    image: 'https://images.unsplash.com/photo-1633436375795-12b3b339712f?w=200&auto=format&fit=crop&q=80',
+  },
+  {
+    id: 'prod-sd-03',
+    name: 'Crispy Golden Onion Rings',
+    barcode: '480000001003',
+    sku: 'SID-003',
+    categoryId: 'cat-sidedish',
+    price: 16.5,
+    cost: 7,
+    stock: 25,
+    image: 'https://images.unsplash.com/photo-1639024471287-032f66440c95?w=200&auto=format&fit=crop&q=80',
+  },
+  {
+    id: 'prod-sd-04',
+    name: 'Toasted Garlic Herb Bread',
+    barcode: '480000001004',
+    sku: 'SID-004',
+    categoryId: 'cat-sidedish',
+    price: 14.0,
+    cost: 6,
+    stock: 40,
+    image: 'https://images.unsplash.com/photo-1619535860434-ba1d8fa12536?w=200&auto=format&fit=crop&q=80',
+  },
+
+  // --- BREAKFAST ---
+  {
+    id: 'prod-bf-01',
+    name: 'Fluffy Buttermilk Pancakes',
+    barcode: '480000002001',
+    sku: 'BRK-001',
+    categoryId: 'cat-breakfast',
+    price: 28.0,
+    cost: 12,
+    stock: 30,
+    image: 'https://images.unsplash.com/photo-1525351484163-7529414344d8?w=200&auto=format&fit=crop&q=80',
+  },
+  {
+    id: 'prod-bf-02',
+    name: 'Avocado Toast & Poached Egg',
+    barcode: '480000002002',
+    sku: 'BRK-002',
+    categoryId: 'cat-breakfast',
+    price: 32.0,
+    cost: 15,
+    stock: 18,
+    image: 'https://images.unsplash.com/photo-1525351484163-7529414344d8?w=200&auto=format&fit=crop&q=80',
+  },
+
+  // --- DINNER ---
+  {
+    id: 'prod-dn-01',
+    name: 'Pan-Seared Atlantic Salmon',
+    barcode: '480000003001',
+    sku: 'DIN-001',
+    categoryId: 'cat-dinner',
+    price: 95.0,
+    cost: 58,
+    stock: 14,
+    image: 'https://images.unsplash.com/photo-1519708227418-c8fd9a32b7a2?w=200&auto=format&fit=crop&q=80',
+  },
+  {
+    id: 'prod-dn-02',
+    name: 'Roasted Rack of Lamb',
+    barcode: '480000003002',
+    sku: 'DIN-002',
+    categoryId: 'cat-dinner',
+    price: 110.0,
+    cost: 70,
+    stock: 9,
+    image: 'https://images.unsplash.com/photo-1544025162-d76694265947?w=200&auto=format&fit=crop&q=80',
+  },
+
+  // --- SOUP ---
+  {
+    id: 'prod-sp-01',
+    name: 'Rich Tonkotsu Pork Ramen',
+    barcode: '480000004001',
+    sku: 'SOU-001',
+    categoryId: 'cat-soup',
+    price: 42.0,
+    cost: 22,
+    stock: 20,
+    image: 'https://images.unsplash.com/photo-1569718212165-3a8278d5f624?w=200&auto=format&fit=crop&q=80',
+  },
+  {
+    id: 'prod-sp-02',
+    name: 'Creamy New England Clam Chowder',
+    barcode: '480000004002',
+    sku: 'SOU-002',
+    categoryId: 'cat-soup',
+    price: 36.0,
+    cost: 18,
+    stock: 16,
+    image: 'https://images.unsplash.com/photo-1547592166-23ac45744acd?w=200&auto=format&fit=crop&q=80',
+  },
+
+  // --- DESSERTS ---
+  {
+    id: 'prod-ds-01',
+    name: 'Molten Chocolate Lava Cake',
+    barcode: '480000005001',
+    sku: 'DES-001',
+    categoryId: 'cat-desserts',
+    price: 24.0,
+    cost: 10,
+    stock: 22,
+    image: 'https://images.unsplash.com/photo-1606313564200-e75d5e30476c?w=200&auto=format&fit=crop&q=80',
+  },
+  {
+    id: 'prod-ds-02',
+    name: 'New York Strawberry Cheesecake',
+    barcode: '480000005002',
+    sku: 'DES-002',
+    categoryId: 'cat-desserts',
+    price: 26.5,
+    cost: 12,
+    stock: 18,
+    image: 'https://images.unsplash.com/photo-1533134242443-d4fd215305ad?w=200&auto=format&fit=crop&q=80',
+  },
+
+  // --- APPETIZER ---
+  {
+    id: 'prod-ap-01',
+    name: 'Classic Caesar Chicken Salad',
+    barcode: '480000006001',
+    sku: 'APP-001',
+    categoryId: 'cat-appetizer',
+    price: 32.0,
+    cost: 16,
+    stock: 25,
+    image: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=200&auto=format&fit=crop&q=80',
+  },
+  {
+    id: 'prod-ap-02',
+    name: 'Crispy Buffalo Wings (6pcs)',
+    barcode: '480000006002',
+    sku: 'APP-002',
+    categoryId: 'cat-appetizer',
+    price: 38.0,
+    cost: 20,
+    stock: 20,
+    image: 'https://images.unsplash.com/photo-1567620832903-9fc6debc209f?w=200&auto=format&fit=crop&q=80',
+  },
+
+  // --- BEVERAGES ---
+  {
+    id: 'prod-bv-01',
+    name: 'Iced Caramel Macchiato',
+    barcode: '480000007001',
+    sku: 'BEV-001',
+    categoryId: 'cat-beverages',
+    price: 18.5,
+    cost: 7,
+    stock: 50,
+    image: 'https://images.unsplash.com/photo-1517256064527-09c73fc73e38?w=200&auto=format&fit=crop&q=80',
+  },
+  {
+    id: 'prod-bv-02',
+    name: 'Fresh Mango Tropical Shake',
+    barcode: '480000007002',
+    sku: 'BEV-002',
+    categoryId: 'cat-beverages',
+    price: 16.0,
+    cost: 6,
+    stock: 45,
+    image: 'https://images.unsplash.com/photo-1546173159-315724a31696?w=200&auto=format&fit=crop&q=80',
+  },
+];
+
+export async function seedDatabaseIfEmpty() {
+  await db.categories.clear();
+  await db.products.clear();
+
+  await db.categories.bulkAdd(RESTOE_CATEGORIES);
+  await db.products.bulkAdd(RESTOE_PRODUCTS);
+
+  const existingShift = await db.shifts.where('status').equals('OPEN').first();
+  if (!existingShift) {
+    const defaultShift: Shift = {
+      id: 'shift-courtney-01',
+      cashierName: 'Courtney Henry',
+      openedAt: Date.now() - 7200000,
+      startingFloat: 200,
+      totalCashSales: 0,
+      totalNonCashSales: 0,
+      expectedCashInDrawer: 200,
+      status: 'OPEN',
+    };
+    await db.shifts.put(defaultShift);
+  }
+}
