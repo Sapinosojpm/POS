@@ -58,7 +58,9 @@ flowchart TB
 ### 2.2. Hardware Communication
 - **Bluetooth Thermal Printers:** Web Bluetooth API (or Capacitor Bluetooth Serial plugin).
 - **Network / LAN Printers:** Direct TCP socket communication (via lightweight local agent or raw socket bridge).
-- **USB Barcode Scanners:** Handled as HID keyboard inputs with key stroke debounce buffer (30ms barcode listener).
+- **USB & Bluetooth Handheld Barcode Scanners:** Handled as HID keyboard inputs with keystroke interval timing buffer (<50ms keystroke timing listener with automatic carriage-return interception).
+- **Mobile/Tablet Camera Scanner:** WebRTC `getUserMedia` with BarcodeDetector API and `@zxing/library` pure-client fallback. Runs 100% offline with zero remote API dependencies. Supports flashlight/torch API constraints where hardware permits.
+- **Audio & Haptic Feedback Bridge:** Native Web Audio API dual-frequency synthesizer (`880Hz` high beep for success, `220Hz` low buzz for missing item) paired with `navigator.vibrate` for tactile feedback without audio asset loading latency.
 - **Protocol:** Raw ESC/POS byte generator (`esc-pos-encoder`).
 
 ### 2.3. Cloud & Backend (For Medium Companies & Sync)

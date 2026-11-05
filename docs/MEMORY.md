@@ -17,6 +17,13 @@
 - **Local Storage Engine:** Dexie.js (IndexedDB) running inside Android WebView and Desktop browsers for zero-dependency, instantaneous (<5ms) indexed queries.
 - **Sync Protocol:** Outbox pattern with client-generated UUIDv4/UUIDv7 keys. Append-only ledger to prevent overwrite race conditions.
 - **Hardware Strategy:** Standard ESC/POS commands via Bluetooth Serial (Capacitor/Web Bluetooth for Android APK) and Web Serial/USB (for desktop terminals).
+- **Barcode Scanner Architecture & Decisions:**
+  - **Cart Auto-Increment:** Scanning an existing cart item automatically increments quantity by `+1` with instant audio confirmation.
+  - **Default Camera Mode:** Opens in **Continuous Batch Scan** mode with an active **1.2-second debounce** on identical barcodes to allow fast, uninterrupted scanning without duplicate runaway counts.
+  - **Unregistered Barcode Flow:** Emits low-tone buzz (`220Hz`) and actionable toast with `[+ Add New Product]` shortcut to pre-fill the barcode into the product modal.
+  - **Audio/Haptics:** Synthesized client-side via Web Audio API (`880Hz` 80ms beep for success, `220Hz` buzz for miss) + `navigator.vibrate(40)`. Zero asset downloads, 100% offline.
+  - **Touch Points:** Integrated into Top Header Bar, Inventory Search Bar, and Add/Edit Product Modal.
+  - **Implementation Verification:** Barcode engine bundled using `@zxing/library` + native `BarcodeDetector` fallback, verified with `npm run build` and synced to Android via `npx cap sync`.
 
 ## Target Personas
 1. **Micro / Solo User:** Standalone Android tablet running the **`.apk`** with no continuous internet. Daily operations and Z-reports are 100% self-contained on the device.

@@ -92,6 +92,51 @@ A modern, touch-optimized, **offline-first hybrid Point of Sale (POS)** designed
   - [ ] Database wipe is rejected if the Manager PIN does not match.
   - [ ] Settings persist across app relaunches in local IndexedDB.
 
+### 3.6. Comprehensive Barcode Scanner System (Hardware Wedge & Live Camera Scanner)
+- **Feature Title:** Unified Barcode Scanning Engine (Hardware USB/Bluetooth Wedge + Tablet/Phone Camera Scanner)
+- **Target Personas:**
+  - **Solo Cashier / Mobile Vendor:** Ringing up sales on a tablet or phone without external handheld guns; relies on the built-in rear camera scanner.
+  - **Retail Checkout Cashier:** Ringing up items high-speed using physical USB/Bluetooth barcode guns (keyboard-wedge mode).
+  - **Inventory Clerk:** Receiving and auditing stock by scanning barcodes in the stock table or product modal.
+- **User Stories:**
+  - *As a Cashier on a tablet*, I want to tap a "Scan Barcode" camera button to instantly point my tablet at product packaging, so that products are added to the cart without manual search or purchasing extra hardware.
+  - *As a High-Speed Cashier with a barcode gun*, I want to scan items continuously from any screen state without clicking an input box first, hearing an instant positive audio chime, so that checkout lines move fast.
+  - *As an Inventory Manager*, I want to scan a product barcode when creating or editing an item in the catalog, so that I don't introduce manual barcode typos.
+- **Resolved Clarifications & Behavior Protocol:**
+  - **Cart Duplication Protocol:** When a barcode is scanned and the item is already present in the cart, the system automatically increments the quantity by `+1`, triggers an instant `880Hz` positive beep, and shows a quick confirmation toast.
+  - **Continuous Batch Scanning:** The Camera Barcode Scanner modal opens by default in **Continuous Batch Scan** mode with an active **1.2-second debounce** on the exact same barcode to prevent accidental runaway increments while keeping the camera open to scan multiple items quickly.
+  - **Unregistered Barcode Flow:** When an unknown barcode is scanned, the system plays an alert buzz (`220Hz`) and surfaces an actionable toast: `"Barcode not found: [Code]"` with a direct action button: `[+ Add New Product]`. Clicking it opens the Product Modal with the barcode pre-filled.
+- **Functional Requirements:**
+  1. **Dual Scanner Input Architecture:**
+     - **Mode A: Hardware HID Keyboard Wedge:** Global window listener captures rapid bursts of key strokes (<50ms between keys) ending in `Enter`. Smart focus detection prevents scanner input from corrupting user-edited text fields.
+     - **Mode B: Interactive Touch Camera Scanner:** Built-in modal viewfinder utilizing device camera (via HTML5 Camera / Barcode Detection API / ZXing) with automatic barcode recognition for common retail standards (EAN-13, EAN-8, UPC-A, Code 128, QR Code).
+  2. **Camera Scanner Viewfinder UX:**
+     - Clean, dark-mode focused overlay with transparent targeting reticle and glowing laser sweep animation.
+     - **Camera Controls:** Rear/Front camera switcher (defaulting to environment/rear camera), and Torch/Flashlight toggle for low-light shop environments.
+     - **Scan Modes:**
+       - *Continuous Batch Scan (Default):* Viewfinder stays open; each scan rings up the item, beeps, flashes a success pill, and allows ringing up the next item without disruption.
+       - *Single Scan:* Scans once, rings up item in cart, and automatically closes viewfinder.
+  3. **Visual & Auditory Feedback Engine:**
+     - Web Audio API synthesizer generates an instant, offline-capable positive high-pitch chime (`880Hz` 80ms tone) on valid scan.
+     - Low-pitch double buzz (`220Hz`) on barcode not found.
+     - Device haptic feedback (`navigator.vibrate([40])`) on Android tablets and phones.
+     - Non-intrusive floating success toast: `"Added: [Product Name] (₱XX.XX) to cart"`.
+  4. **Touch Integration Points:**
+     - **POS Register Top Bar:** Scan Barcode camera button beside the search input.
+     - **Inventory Management:** Scan Barcode button inside the inventory search bar for instant stock lookup.
+     - **Add/Edit Product Modal:** Scan icon inside the Barcode/EAN field to scan and auto-populate existing packaging codes.
+  5. **Hardware Scanner Diagnostics & Settings:**
+     - Scanner test zone in Settings to verify gun prefix/suffix and scan speed.
+     - Audio feedback volume / mute toggle in Settings.
+- **Acceptance Criteria:**
+  - [ ] Camera scanner recognizes standard barcodes (EAN-13, UPC, Code 128) in under 300ms under standard lighting.
+  - [ ] Scanned product increments existing cart quantity or creates a new order line item.
+  - [ ] Unregistered barcode triggers negative audio alert and displays actionable toast: `"Barcode not found: [Code] — Add to Catalog?"`.
+  - [ ] Continuous scan mode permits ringing up multiple items in succession without closing the camera view with 1.2s debounce on identical code.
+  - [ ] Torch/Flashlight toggle illuminates camera flash if supported by device hardware.
+  - [ ] Camera stream strictly terminates (stops all tracks) immediately upon modal close or route change to save battery.
+  - [ ] Hardware barcode scanner gun input triggers cart add without requiring focus on any input box.
+
 ---
 
 ## 4. Non-Functional Requirements

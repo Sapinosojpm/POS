@@ -48,6 +48,16 @@
 - [x] Factory Reset / Wipe database securely protected by 4-digit Manager PIN (`1234`).
 - [x] Manager PIN update dialog.
 
+## Phase 4.6: Comprehensive Barcode Scanner System (PRD 3.6)
+- [x] Implement offline sound & haptic utility (`playScanSuccessSound`, `playScanErrorSound`, `triggerHaptic`) using Web Audio API and `navigator.vibrate`.
+- [x] Build touch-optimized `BarcodeScannerModal` with live camera video feed, aiming reticle, laser animation, torch toggle, and front/rear camera switcher.
+- [x] Implement client-side offline barcode decoding with fallback (HTML5 BarcodeDetector / ZXing).
+- [x] Implement Continuous Batch Scan mode with 1.2s debounce on identical barcodes and Single Scan mode.
+- [x] Enhance global hardware keyboard-wedge scanner listener with audio feedback and auto-increment cart quantity.
+- [x] Add floating toast feedback with quick action to add new product when barcode is not found.
+- [x] Integrate camera scan buttons into Header search bar, Inventory search bar, and Add/Edit Product modal.
+- [x] Add Barcode Scanner diagnostics and test pad in Settings screen.
+
 ## Phase 5: Cloud Sync Gateway & Outbox Engine
 - [ ] Implement background Outbox sync worker (`sync_queue` table).
 - [ ] Build online/offline connection listener with real-time UI indicator pill.

@@ -13,12 +13,14 @@ import {
   X,
   Filter,
   RefreshCw,
+  Scan,
 } from 'lucide-react';
 import { db } from '../core/db';
 import { toast } from '../store/useToastStore';
 import { useCartStore } from '../store/useCartStore';
 import type { Product, Category } from '../types';
 import { AddProductModal } from './AddProductModal';
+import { BarcodeScannerModal } from './BarcodeScannerModal';
 
 interface InventoryViewProps {
   products: Product[];
@@ -32,6 +34,7 @@ export const InventoryView: React.FC<InventoryViewProps> = ({ products, categori
   const [stockFilter, setStockFilter] = useState<'all' | 'low' | 'out'>('all');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [isScannerOpen, setIsScannerOpen] = useState(false);
 
   // Stats calculation
   const totalItemsCount = products.length;
@@ -236,24 +239,36 @@ export const InventoryView: React.FC<InventoryViewProps> = ({ products, categori
 
       {/* Modern Filter, Search, and Category Toolbar */}
       <div className="bg-white p-3 rounded-xl border border-slate-200 shadow-sm mb-4 shrink-0 flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
-        {/* Search input with clear button and item count */}
-        <div className="relative flex-1 max-w-md">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search by name, SKU, or barcode..."
-            className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-9 pr-8 py-2 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition"
-          />
-          {search && (
-            <button
-              onClick={() => setSearch('')}
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 w-5 h-5 rounded-md hover:bg-slate-200 text-slate-400 hover:text-slate-600 flex items-center justify-center transition"
-            >
-              <X className="w-3 h-3" />
-            </button>
-          )}
+        {/* Search input and barcode scan button */}
+        <div className="flex items-center gap-2 flex-1 max-w-md">
+          <div className="relative flex-1">
+            <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search by name, SKU, or barcode..."
+              className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-9 pr-8 py-2 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition"
+            />
+            {search && (
+              <button
+                onClick={() => setSearch('')}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 w-5 h-5 rounded-md hover:bg-slate-200 text-slate-400 hover:text-slate-600 flex items-center justify-center transition"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            )}
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setIsScannerOpen(true)}
+            className="flex items-center gap-1.5 px-3 py-2 bg-blue-50 hover:bg-blue-100 text-blue-600 hover:text-blue-700 border border-blue-200 rounded-lg text-xs font-bold transition shadow-xs active:scale-95 shrink-0"
+            title="Scan barcode to lookup item"
+          >
+            <Scan className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Scan</span>
+          </button>
         </div>
 
         {/* Category Pills & Filter Indicator */}
@@ -519,6 +534,20 @@ export const InventoryView: React.FC<InventoryViewProps> = ({ products, categori
         }}
         categories={categories}
         editingProduct={editingProduct}
+      />
+
+      {/* Barcode Scanner Modal for Inventory Filter */}
+      <BarcodeScannerModal
+        isOpen={isScannerOpen}
+        onClose={() => setIsScannerOpen(false)}
+        onScan={(scannedCode) => {
+          setSearch(scannedCode);
+          setIsScannerOpen(false);
+          toast.info('Barcode Filtered', `Showing inventory records matching "${scannedCode}"`);
+        }}
+        title="Scan to Lookup Inventory"
+        subtitle="Point camera at product barcode to filter stock records"
+        defaultContinuous={false}
       />
     </div>
   );

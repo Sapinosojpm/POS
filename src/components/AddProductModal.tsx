@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { X, Plus, Package } from 'lucide-react';
+import { X, Plus, Package, Scan } from 'lucide-react';
 import { db } from '../core/db';
 import { toast } from '../store/useToastStore';
+import { BarcodeScannerModal } from './BarcodeScannerModal';
 import type { Category, Product } from '../types';
 
 interface AddProductModalProps {
@@ -9,6 +10,7 @@ interface AddProductModalProps {
   onClose: () => void;
   categories: Category[];
   editingProduct?: Product | null;
+  initialBarcode?: string;
 }
 
 export const AddProductModal: React.FC<AddProductModalProps> = ({
@@ -16,16 +18,18 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({
   onClose,
   categories,
   editingProduct,
+  initialBarcode,
 }) => {
   const [name, setName] = useState(editingProduct?.name || '');
   const [categoryId, setCategoryId] = useState(editingProduct?.categoryId || categories[0]?.id || 'cat-lunch');
   const [price, setPrice] = useState(editingProduct?.price?.toString() || '');
   const [cost, setCost] = useState(editingProduct?.cost?.toString() || '');
   const [stock, setStock] = useState(editingProduct?.stock?.toString() || '10');
-  const [barcode, setBarcode] = useState(editingProduct?.barcode || '');
+  const [barcode, setBarcode] = useState(editingProduct?.barcode || initialBarcode || '');
   const [sku, setSku] = useState(editingProduct?.sku || '');
   const [image, setImage] = useState(editingProduct?.image || '');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isScannerOpen, setIsScannerOpen] = useState(false);
 
   if (!isOpen) return null;
 
@@ -175,13 +179,23 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({
               <label className="block text-[11px] font-bold text-slate-600 uppercase tracking-wider mb-1">
                 Barcode / EAN
               </label>
-              <input
-                type="text"
-                value={barcode}
-                onChange={(e) => setBarcode(e.target.value)}
-                placeholder="e.g. 480000000001"
-                className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3.5 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white"
-              />
+              <div className="flex gap-1.5">
+                <input
+                  type="text"
+                  value={barcode}
+                  onChange={(e) => setBarcode(e.target.value)}
+                  placeholder="e.g. 480000000001"
+                  className="flex-1 min-w-0 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white"
+                />
+                <button
+                  type="button"
+                  onClick={() => setIsScannerOpen(true)}
+                  className="px-2.5 py-2 bg-blue-50 text-blue-600 hover:bg-blue-100 hover:text-blue-700 border border-blue-200 rounded-lg flex items-center justify-center transition-colors shrink-0"
+                  title="Scan barcode with camera"
+                >
+                  <Scan className="w-4 h-4" />
+                </button>
+              </div>
             </div>
 
             <div>
@@ -220,6 +234,19 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({
             <span>{isSubmitting ? 'Saving...' : editingProduct ? 'Update Product' : 'Add Product to Inventory'}</span>
           </button>
         </form>
+
+        {/* Embedded Barcode Scanner Modal */}
+        <BarcodeScannerModal
+          isOpen={isScannerOpen}
+          onClose={() => setIsScannerOpen(false)}
+          onScan={(scannedCode) => {
+            setBarcode(scannedCode);
+            setIsScannerOpen(false);
+          }}
+          title="Scan Product Packaging"
+          subtitle="Point camera at product barcode to auto-fill"
+          defaultContinuous={false}
+        />
       </div>
     </div>
   );

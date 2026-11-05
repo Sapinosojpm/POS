@@ -85,6 +85,26 @@ The viewport is divided into three primary zones in a landscape tablet/desktop v
   - Radio Cards for Paper Width: 2 selectable cards for **58mm** and **80mm** with visual receipt diagrams.
   - Primary Action: Sticky footer bar with "Save Settings" button (`bg-blue-600 text-white font-bold px-6 py-2.5 rounded-lg shadow-sm`).
 
+### 3.5. Camera Barcode Scanner Modal & Viewfinder (Restoe Tokens)
+- **Modal Wrapper:** Full-screen backdrop with blur (`bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-4`).
+- **Scanner Viewfinder Card:**
+  - Container: `bg-slate-900 rounded-2xl border border-slate-700 shadow-2xl max-w-md w-full overflow-hidden text-white flex flex-col`.
+  - Header: Barcode icon, "Scan Product Barcode" title, with close button (`w-9 h-9 rounded-lg bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center`).
+  - Viewfinder Area: Aspect-ratio 4:3 or square video container with relative positioning.
+    - Video Element: Mirrored rear camera feed (`w-full h-full object-cover`).
+    - Aiming Reticle: Centered bounding frame with 4 bold blue corner brackets (`w-56 h-44 border-2 border-blue-500 rounded-xl relative`).
+    - Laser Scan Line: Horizontal glowing animated laser beam traversing vertically (`h-0.5 bg-gradient-to-r from-transparent via-blue-400 to-transparent shadow-[0_0_8px_#38bdf8] animate-scanner-laser`).
+  - Viewfinder Floating Overlay:
+    - Top Controls: Flashlight/Torch toggle button (`bg-black/50 backdrop-blur-md rounded-full p-2.5 text-white hover:bg-black/70`) and Camera switcher (`Front/Rear`).
+    - Success Pill: Animated floating badge when an item is detected (`bg-emerald-600 text-white px-4 py-1.5 rounded-full text-xs font-semibold shadow-md animate-fade-in`).
+  - Bottom Action Toolbar:
+    - "Continuous Scan" toggle pill switch (`bg-slate-800 border border-slate-700 px-3 py-1.5 rounded-lg text-xs`).
+    - Fallback Manual Input field or "Manual Code Entry" trigger button for damaged barcodes.
+- **Trigger Buttons:**
+  - Header search bar scan button: `h-9 px-3 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 border border-blue-200 flex items-center gap-1.5 text-xs font-medium`.
+  - Inventory search bar scan icon: `p-2 rounded-lg bg-slate-100 text-slate-600 hover:bg-blue-50 hover:text-blue-600`.
+  - Add/Edit Product Modal barcode field: `px-3 py-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 text-xs font-medium border border-blue-200`.
+
 ---
 
 ## 4. Skeleton Loading Patterns (Zero-Latency Perceived Performance)

@@ -14,9 +14,13 @@ import {
   Lock,
   Eye,
   EyeOff,
+  Scan,
+  Volume2,
 } from 'lucide-react';
 import { useSettingsStore, type StoreSettings } from '../store/useSettingsStore';
 import { printerService } from '../core/hardware/printer';
+import { playScanSuccessSound, playScanErrorSound, triggerHaptic } from '../core/hardware/scannerFeedback';
+import { BarcodeScannerModal } from './BarcodeScannerModal';
 import { db } from '../core/db';
 import { seedDatabaseIfEmpty } from '../core/db/seed';
 import { toast } from '../store/useToastStore';
@@ -24,13 +28,16 @@ import { toast } from '../store/useToastStore';
 export const SettingsView: React.FC = () => {
   const { settings, updateSettings, resetSettings } = useSettingsStore();
   const [formData, setFormData] = useState<StoreSettings>({ ...settings });
-  const [activeSection, setActiveSection] = useState<'store' | 'printer' | 'finance' | 'data'>('store');
+  const [activeSection, setActiveSection] = useState<'store' | 'printer' | 'finance' | 'data' | 'scanner'>('store');
   const [pinInput, setPinInput] = useState('');
   const [isPinModalOpen, setIsPinModalOpen] = useState(false);
   const [pinAction, setPinAction] = useState<'reset' | 'changePin' | null>(null);
   const [newPin, setNewPin] = useState('');
   const [showPin, setShowPin] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
+  const [isScannerTestOpen, setIsScannerTestOpen] = useState(false);
+  const [scannerTestCode, setScannerTestCode] = useState('');
+  const [scannedResult, setScannedResult] = useState<string | null>(null);
 
   const handleChange = (field: keyof StoreSettings, value: any) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -308,6 +315,7 @@ export const SettingsView: React.FC = () => {
             {[
               { id: 'store', label: 'Store Identity', icon: Store },
               { id: 'printer', label: 'Thermal Printer', icon: Printer },
+              { id: 'scanner', label: 'Barcode Scanner', icon: Scan },
               { id: 'finance', label: 'Currency & Tax', icon: DollarSign },
               { id: 'data', label: 'Backup & Security', icon: ShieldCheck },
             ].map(({ id, label, icon: Icon }) => {
@@ -512,6 +520,148 @@ export const SettingsView: React.FC = () => {
                     <Printer className="w-4 h-4" />
                     <span>Test Print Sample Receipt</span>
                   </button>
+                </div>
+              </div>
+            )}
+
+            {/* SECTION: BARCODE SCANNER DIAGNOSTICS */}
+            {activeSection === 'scanner' && (
+              <div className="space-y-4 animate-in fade-in duration-200">
+                <div className="border-b border-slate-100 pb-3">
+                  <h3 className="font-bold text-sm text-slate-900">Barcode Scanner & Hardware Testing</h3>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    Test hardware USB/Bluetooth barcode guns, tablet camera recognition, and audio chimes.
+                  </p>
+                </div>
+
+                {/* 1. Camera Barcode Scanner Launch Card */}
+                <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between gap-4">
+                  <div>
+                    <h4 className="font-bold text-xs text-slate-900 flex items-center gap-1.5">
+                      <Scan className="w-4 h-4 text-blue-600" />
+                      Tablet Camera Barcode Scanner
+                    </h4>
+                    <p className="text-[11px] text-slate-500 mt-0.5 max-w-sm">
+                      Opens device rear camera with high-contrast targeting reticle, flashlight toggle, and continuous batch scan mode.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setIsScannerTestOpen(true)}
+                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-lg shadow-sm transition active:scale-95 shrink-0 flex items-center gap-1.5"
+                  >
+                    <Scan className="w-3.5 h-3.5" />
+                    Launch Camera Test
+                  </button>
+                </div>
+
+                {/* 2. Hardware USB/Bluetooth Barcode Gun Test Field */}
+                <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="font-bold text-xs text-slate-900">Hardware Barcode Gun Test Pad</h4>
+                      <p className="text-[11px] text-slate-500">
+                        Click into this field and pull the trigger on your USB or Bluetooth barcode scanner.
+                      </p>
+                    </div>
+                    {scannedResult && (
+                      <span className="text-[10px] font-bold px-2 py-0.5 bg-emerald-100 text-emerald-800 rounded-full">
+                        Scan Captured
+                      </span>
+                    )}
+                  </div>
+
+                  <form
+                    onSubmit={async (e) => {
+                      e.preventDefault();
+                      if (!scannerTestCode.trim()) return;
+                      const code = scannerTestCode.trim();
+                      setScannerTestCode('');
+                      const found = await db.products.where('barcode').equals(code).first();
+                      if (found) {
+                        playScanSuccessSound();
+                        triggerHaptic('success');
+                        setScannedResult(`✓ Matched: "${found.name}" (₱${found.price.toFixed(2)}) — Stock: ${found.stock}`);
+                      } else {
+                        playScanErrorSound();
+                        triggerHaptic('error');
+                        setScannedResult(`✗ Barcode "${code}" is not in database.`);
+                      }
+                    }}
+                    className="flex gap-2"
+                  >
+                    <input
+                      type="text"
+                      value={scannerTestCode}
+                      onChange={(e) => setScannerTestCode(e.target.value)}
+                      placeholder="Scan with physical gun or type code and press Enter..."
+                      className="flex-1 bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs font-mono text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                    <button
+                      type="submit"
+                      disabled={!scannerTestCode.trim()}
+                      className="px-3.5 py-2 bg-slate-800 hover:bg-slate-900 disabled:opacity-40 text-white text-xs font-bold rounded-lg transition"
+                    >
+                      Test Lookup
+                    </button>
+                  </form>
+
+                  {scannedResult && (
+                    <div
+                      className={`p-2.5 rounded-lg text-xs font-mono font-medium ${
+                        scannedResult.startsWith('✓')
+                          ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+                          : 'bg-rose-50 text-rose-800 border border-rose-200'
+                      }`}
+                    >
+                      {scannedResult}
+                    </div>
+                  )}
+                </div>
+
+                {/* 3. Audio & Haptic Diagnostic Buttons */}
+                <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+                  <h4 className="font-bold text-xs text-slate-900 flex items-center gap-1.5">
+                    <Volume2 className="w-4 h-4 text-slate-600" />
+                    Web Audio Synthesis & Haptics (Offline Sound Engine)
+                  </h4>
+                  <p className="text-[11px] text-slate-500">
+                    Sounds are generated client-side using oscillator harmonics without external sound file downloads.
+                  </p>
+                  <div className="flex flex-wrap gap-2 pt-1">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        playScanSuccessSound();
+                        triggerHaptic('success');
+                        toast.success('Sound Verified', '880 Hz positive scan chime played.');
+                      }}
+                      className="px-3 py-1.5 bg-white border border-slate-200 hover:border-blue-400 hover:bg-blue-50 text-slate-700 hover:text-blue-700 rounded-lg text-xs font-bold shadow-xs transition"
+                    >
+                      🔊 Test Success Beep (880Hz)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        playScanErrorSound();
+                        triggerHaptic('error');
+                        toast.error('Sound Verified', '220 Hz warning alert buzz played.');
+                      }}
+                      className="px-3 py-1.5 bg-white border border-slate-200 hover:border-rose-400 hover:bg-rose-50 text-slate-700 hover:text-rose-700 rounded-lg text-xs font-bold shadow-xs transition"
+                    >
+                      🔊 Test Alert Buzz (220Hz)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        triggerHaptic('success');
+                        toast.info('Haptics Triggered', 'Device vibration requested.');
+                      }}
+                      className="px-3 py-1.5 bg-white border border-slate-200 hover:border-slate-400 text-slate-700 rounded-lg text-xs font-bold shadow-xs transition"
+                    >
+                      📳 Test Haptic Vibration
+                    </button>
+                  </div>
                 </div>
               </div>
             )}
@@ -852,6 +1002,25 @@ export const SettingsView: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Barcode Scanner Diagnostic Modal */}
+      <BarcodeScannerModal
+        isOpen={isScannerTestOpen}
+        onClose={() => setIsScannerTestOpen(false)}
+        onScan={async (code) => {
+          const found = await db.products.where('barcode').equals(code).first();
+          if (found) {
+            setScannedResult(`✓ Camera Matched: "${found.name}" (₱${found.price.toFixed(2)}) — Stock: ${found.stock}`);
+            toast.success('Camera Scan Verified', `Detected "${found.name}"`);
+          } else {
+            setScannedResult(`✗ Camera Scanned: "${code}" (Not in database)`);
+            toast.error('Unknown Code', `Barcode "${code}" not found.`);
+          }
+        }}
+        title="Test Camera Scanner"
+        subtitle="Aim at a product barcode to test camera decoding"
+        defaultContinuous={true}
+      />
     </div>
   );
 };
