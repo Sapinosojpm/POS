@@ -139,6 +139,97 @@ A modern, touch-optimized, **offline-first hybrid Point of Sale (POS)** designed
 
 ---
 
+### 3.7. Senior Citizen, PWD & Statutory Discounts Engine
+- **Feature Title:** Philippine Statutory Discounts (Senior Citizen & PWD) and Custom Cart Promos
+- **Target Personas:**
+  - **Solo Cashier / Kiosk Attendant:** Quickly applying 20% statutory discount for elderly or disabled customers with minimal clicks.
+  - **F&B Server / Cashier:** Handling mixed dining groups where a portion of the bill is eligible for Senior/PWD discount (pax sharing computation).
+  - **Store Manager / Owner:** Verifying daily audit reports and BIR compliance records for sales deductions.
+- **User Stories:**
+  - *As a Cashier*, I want to tap a "Discount" button in the cart to select "Senior Citizen" or "PWD", enter their ID number and name, so that the 12% VAT is automatically removed and 20% discount is deducted according to Philippine law.
+  - *As a Cashier*, I want to apply custom percentage (`10%`, `15%`, `50%`) or fixed amount (`₱50`, `₱100`) coupon discounts to reward loyal customers or promotions.
+  - *As a Store Owner*, I want the printed ESC/POS thermal receipt to explicitly show the VAT-exempt sales, 20% discount amount, Senior/PWD Name, ID number, and signature line for BIR tax compliance.
+- **Statutory Computation Rules (Philippine Standard):**
+  1. **VAT Removal:** `Net_of_VAT = Gross_Eligible_Total / 1.12`
+  2. **VAT Relief:** `VAT_Exempt = Gross_Eligible_Total - Net_of_VAT`
+  3. **Senior/PWD 20% Discount:** `Statutory_Discount = Net_of_VAT * 0.20`
+  4. **Pax Sharing Rule (F&B / Multi-Guest):** If party of $N$ guests has $S$ Seniors/PWDs, eligible portion is `(Gross_Total / N) * S`. Default is 1 Senior out of 1 Guest (100% eligible).
+  5. **Final Total:** `Final_Total = Gross_Total - VAT_Exempt - Statutory_Discount`
+- **Resolved Clarifications & Business Protocols:**
+  - **No Double Discounting Rule:** Stacking is strictly prohibited per Philippine law (DTI/DA/DOE JAO No. 10-02 & RA 9994). A cart can have either a Senior/PWD discount OR a promo voucher, never both simultaneously.
+  - **Cart Scope Default:** Default calculation covers **100% of the current cart** (1 Pax / 1 Senior), with optional Stepper controls (`[-] 1 [+] Seniors out of [-] 4 [+] Guests`) for split group dining.
+  - **ID Compliance:** Senior/PWD ID Number is required for BIR audit logging, with a quick 1-tap fallback button `[Use NA/Walk-in]` if the cashier is dealing with an extreme rush.
+- **Functional Requirements:**
+  1. **Discount Selector Modal:**
+     - Quick Tabs: **Senior Citizen / PWD (Statutory)**, **Percentage (%) Discount**, **Fixed (₱) Voucher**.
+     - Senior/PWD Form: Full Name, Senior/PWD ID Number, Total Guest Count, Senior Guest Count.
+     - Preset Percentage Buttons: `5%`, `10%`, `15%`, `20%`, `50% Employee`.
+     - Fixed Amount Input with quick pills: `₱20`, `₱50`, `₱100`.
+  2. **Invoice Panel Live Breakdown:**
+     - Displays line item deductions in soft red/amber pills.
+     - `Subtotal: ₱XXX.XX`
+     - `Less VAT (12%): -₱XX.XX`
+     - `Senior Discount (20%): -₱XX.XX`
+     - `Total Amount Due: ₱XXX.XX`
+     - 1-Click `[✕ Remove Discount]` badge to easily reset back to standard pricing.
+  3. **Thermal Receipt Generation:**
+     - Formatted receipt section:
+       ```
+       VATable Sales:        ₱0.00
+       VAT-Exempt Sales:     ₱XXX.XX
+       Less 12% VAT:        -₱XX.XX
+       Less 20% SC/PWD Disc:-₱XX.XX
+       ----------------------------
+       TOTAL DUE:            ₱XXX.XX
+       Customer: [Name]
+       SC/PWD ID: [ID Number]
+       Signature: ________________
+       ```
+- **Acceptance Criteria:**
+  - [ ] Entering a ₱112.00 VAT-inclusive item correctly computes `Net of VAT = ₱100.00`, `VAT Exemption = ₱12.00`, `20% Discount = ₱20.00`, leaving `Total Due = ₱80.00`.
+  - [ ] Split party calculation accurately discounts only the senior's proportional share when guest count > 1.
+  - [ ] Senior Citizen / PWD name and ID number persist on the saved `order` in IndexedDB.
+  - [ ] ESC/POS thermal receipt prints the required statutory details and signature line.
+  - [ ] Custom percentage and fixed discounts calculate accurately without floating point rounding errors.
+  - [ ] Cashier can clear or update the discount at any time before completing payment.
+
+### 3.8. Hold Order & Parked Cart System (Layaway / Multi-Cart Stash)
+- **Feature Title:** Hold Order & Parked Cart Engine (Multi-Ticket Stashing & 1-Click Recall)
+- **Target Personas:**
+  - **Solo Cashier / Counter Attendant:** Managing high-traffic checkout lines when a customer steps away to grab an extra item, forgot their cash in the car, or needs time to unlock their GCash app.
+  - **F&B Server:** Juggling multiple open tables or takeout customers simultaneously before payment.
+- **User Stories:**
+  - *As a Cashier*, I want to park the current customer's order with an optional customer name or table tag, so that I can immediately ring up the next waiting customer without deleting the cart.
+  - *As a Cashier*, I want to see a live badge of all parked orders in the header, and open a drawer or modal to recall any held cart with 1 tap.
+  - *As a Cashier*, I want parked carts to survive app relaunches or battery power-offs, so that no customer order is lost.
+- **Resolved Clarifications & Business Protocols:**
+  - **Stock Deductions:** Stock is deducted **ONLY** when a sale is finalized and completed at checkout. Parked orders do not hold artificial inventory reservations; abandoned or discarded parked orders never skew inventory ledger counts.
+  - **Hold Prompt UX:** Fast dialog with an automatic auto-numbered tag (e.g. `Hold #1`, `Hold #2`), with 1-tap focus allowing the cashier to immediately rename to `Table 4` or `Sir John` if desired.
+  - **Zero-Loss Collision Swap:** If the cashier recalls a held order while an active cart currently has items, the system automatically parks the active cart first (as `Hold #(N+1)`), then restores the selected order. No customer items are ever lost or discarded by accident.
+- **Functional Requirements:**
+  1. **Hold Cart Trigger:**
+     - Prominent "Hold Order" icon button in the Invoice panel header beside the Clear button.
+     - Quick dialog allowing optional label entry (e.g. `Table #5`, `John Doe`, or defaults to auto-assigned `Hold #1, #2`).
+  2. **Local Persistence (Dexie IndexedDB):**
+     - Stored in a local master `held_orders` table to guarantee resilience against tab closes, crashes, or power outages.
+     - Payload: `id` (UUIDv4), `tag`, `items` (products, quantities, notes), `discount` (statutory or promo), `subtotal`, `createdAt` timestamp, `cashierName`.
+  3. **Held Orders Recall Drawer/Modal:**
+     - High-visibility pill badge in Top Header or Invoice header: `[📦 2 Held Orders]`.
+     - Clicking opens a clean slide-over or modal with cards for each held order showing:
+       - Tag / Identifier, Time held (relative: "5m ago"), Item list preview, Total value.
+       - Primary Action: `[Recall Order]` to restore all items and discounts directly into the active register.
+       - Secondary Action: `[Discard]` with confirmation.
+  4. **Active Cart Conflict Safety:**
+     - If the cashier attempts to recall a held order while items already occupy the active cart, the system seamlessly parks the active cart first, then restores the chosen order.
+- **Acceptance Criteria:**
+  - [ ] Clicking "Hold Order" parks current cart (including applied Senior/PWD discounts) and clears the register instantly.
+  - [ ] Held order badge dynamically displays the current count of parked carts.
+  - [ ] Recalling an order restores all products, item quantities, and statutory discounts exactly as they were parked.
+  - [ ] Held orders persist in IndexedDB across browser reloads and device restarts.
+  - [ ] Recalling into a non-empty cart safely allows parking the active cart first without losing any customer's items.
+
+---
+
 ## 4. Non-Functional Requirements
 - **Reliability:** The POS must NEVER freeze or reject a sale due to network timeout.
 - **Platform Agnostic:** Runs identically in Web Browser, PWA (Android/iOS), or Native Desktop wrapper (Tauri/Electron).

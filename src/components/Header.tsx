@@ -1,13 +1,16 @@
 import React from 'react';
-import { Search, Bell, Wifi, WifiOff, Scan } from 'lucide-react';
+import { useLiveQuery } from 'dexie-react-hooks';
+import { Search, Bell, Wifi, WifiOff, Scan, PackageOpen } from 'lucide-react';
 import { useCartStore } from '../store/useCartStore';
 import { useSettingsStore } from '../store/useSettingsStore';
+import { db } from '../core/db';
 
 interface HeaderProps {
   searchQuery: string;
   setSearchQuery: (query: string) => void;
   onOpenNotifications: () => void;
   onOpenScanner?: () => void;
+  onOpenHeldOrders?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -15,9 +18,11 @@ export const Header: React.FC<HeaderProps> = ({
   setSearchQuery,
   onOpenNotifications,
   onOpenScanner,
+  onOpenHeldOrders,
 }) => {
   const { isOnline } = useCartStore();
   const { settings } = useSettingsStore();
+  const heldOrdersCount = useLiveQuery(() => db.heldOrders.count(), []) || 0;
 
   const flag = settings.currencyCode === 'PHP' ? '🇵🇭' : settings.currencyCode === 'USD' ? '🇺🇸' : '🇪🇺';
 
@@ -64,6 +69,19 @@ export const Header: React.FC<HeaderProps> = ({
           <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
           <span>Gun Ready</span>
         </div>
+
+        {/* Held Orders Pill Badge */}
+        {heldOrdersCount > 0 && onOpenHeldOrders && (
+          <button
+            type="button"
+            onClick={onOpenHeldOrders}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-900 text-xs font-bold transition shadow-2xs active:scale-95"
+            title="View parked / held customer carts"
+          >
+            <PackageOpen className="w-3.5 h-3.5 text-amber-600" />
+            <span>{heldOrdersCount} Held</span>
+          </button>
+        )}
       </div>
 
       {/* Right Controls: Flag/Currency, Notification, Cashier Profile */}

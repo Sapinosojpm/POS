@@ -13,7 +13,16 @@ interface CheckoutModalProps {
 }
 
 export const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose, onOrderCompleted }) => {
-  const { items, getTotal, getSubtotal, getTax, cashierName, clearCart, currency } = useCartStore();
+  const {
+    items,
+    getTotal,
+    getSubtotal,
+    getDiscountBreakdown,
+    discount,
+    cashierName,
+    clearCart,
+    currency,
+  } = useCartStore();
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('CASH');
   const [tenderedStr, setTenderedStr] = useState<string>('');
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
@@ -22,6 +31,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose, o
   if (!isOpen) return null;
 
   const total = getTotal();
+  const breakdown = getDiscountBreakdown();
   const tendered = parseFloat(tenderedStr) || 0;
   const changeDue = Math.max(0, tendered - total);
   const isExactOrOver = paymentMethod !== 'CASH' || tendered >= total;
@@ -56,8 +66,13 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose, o
         cashierName: cashierName || 'Courtney Henry',
         shiftId: 'shift-current',
         subtotal: getSubtotal(),
-        discount: 0,
-        tax: getTax(),
+        discount: breakdown.discountAmount,
+        discountType: discount?.type,
+        discountCustomerName: discount?.customerName,
+        discountIdNumber: discount?.idNumber,
+        vatExemptAmount: breakdown.vatExemptAmount,
+        seniorDiscountAmount: breakdown.discountAmount,
+        tax: breakdown.tax,
         total,
         paymentMethod,
         amountTendered: paymentMethod === 'CASH' ? tendered : total,
@@ -160,6 +175,18 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose, o
                 <span>Tendered:</span>
                 <span className="font-bold text-slate-800">{currency}{completedOrder.amountTendered.toFixed(2)}</span>
               </div>
+              {completedOrder.discount > 0 && (
+                <div className="flex justify-between text-xs text-rose-600 font-semibold">
+                  <span>Discount Saved:</span>
+                  <span>-{currency}{completedOrder.discount.toFixed(2)}</span>
+                </div>
+              )}
+              {completedOrder.vatExemptAmount && completedOrder.vatExemptAmount > 0 ? (
+                <div className="flex justify-between text-xs text-amber-700 font-semibold">
+                  <span>VAT Exemption:</span>
+                  <span>-{currency}{completedOrder.vatExemptAmount.toFixed(2)}</span>
+                </div>
+              ) : null}
               <div className="flex justify-between text-sm font-bold pt-2 border-t border-slate-200 text-blue-600">
                 <span>Change Due:</span>
                 <span>{currency}{completedOrder.changeDue.toFixed(2)}</span>

@@ -1,6 +1,11 @@
-import React from 'react';
-import { CreditCard, Clock, Banknote, ArrowRight, ShoppingBag, Trash2, Plus, Minus } from 'lucide-react';
+import React, { useState } from 'react';
+import { useLiveQuery } from 'dexie-react-hooks';
+import { CreditCard, Clock, Banknote, ArrowRight, ShoppingBag, Trash2, Plus, Minus, Award, X, PauseCircle, PackageOpen } from 'lucide-react';
 import { useCartStore } from '../store/useCartStore';
+import { DiscountModal } from './DiscountModal';
+import { HoldCartModal } from './HoldCartModal';
+import { HeldOrdersModal } from './HeldOrdersModal';
+import { db } from '../core/db';
 import type { PaymentMethod } from '../types';
 
 interface CartViewProps {
@@ -14,15 +19,23 @@ export const CartView: React.FC<CartViewProps> = ({ onOpenCheckout }) => {
     setPaymentMethod,
     getTotal,
     getSubtotal,
-    getTax,
+    getDiscountBreakdown,
+    discount,
+    clearDiscount,
     currency,
     removeItem,
     updateQuantity,
     clearCart,
   } = useCartStore();
 
+  const [isDiscountModalOpen, setIsDiscountModalOpen] = useState(false);
+  const [isHoldModalOpen, setIsHoldModalOpen] = useState(false);
+  const [isHeldOrdersModalOpen, setIsHeldOrdersModalOpen] = useState(false);
+
+  const heldOrdersCount = useLiveQuery(() => db.heldOrders.count(), []) || 0;
+
+  const breakdown = getDiscountBreakdown();
   const subtotal = getSubtotal();
-  const tax = getTax();
   const total = getTotal();
 
   const paymentOptions = [
@@ -42,16 +55,42 @@ export const CartView: React.FC<CartViewProps> = ({ onOpenCheckout }) => {
           </span>
         </div>
 
-        {items.length > 0 && (
-          <button
-            onClick={clearCart}
-            className="text-[11px] font-bold text-slate-400 hover:text-rose-600 hover:bg-rose-50 px-2 py-1 rounded transition flex items-center gap-1 active:scale-95"
-            title="Clear all items from invoice"
-          >
-            <Trash2 className="w-3 h-3" />
-            <span>Clear</span>
-          </button>
-        )}
+        <div className="flex items-center gap-1.5">
+          {heldOrdersCount > 0 && (
+            <button
+              type="button"
+              onClick={() => setIsHeldOrdersModalOpen(true)}
+              className="text-[11px] font-bold text-amber-800 bg-amber-100 hover:bg-amber-200 px-2 py-1 rounded-md transition flex items-center gap-1 active:scale-95 shadow-2xs"
+              title="View parked / held orders"
+            >
+              <PackageOpen className="w-3.5 h-3.5" />
+              <span>{heldOrdersCount} Held</span>
+            </button>
+          )}
+
+          {items.length > 0 && (
+            <>
+              <button
+                type="button"
+                onClick={() => setIsHoldModalOpen(true)}
+                className="text-[11px] font-bold text-amber-800 bg-amber-50 hover:bg-amber-100 border border-amber-200 px-2 py-1 rounded-md transition flex items-center gap-1 active:scale-95"
+                title="Park / Hold current cart"
+              >
+                <PauseCircle className="w-3.5 h-3.5" />
+                <span>Hold</span>
+              </button>
+
+              <button
+                onClick={clearCart}
+                className="text-[11px] font-bold text-slate-400 hover:text-rose-600 hover:bg-rose-50 px-2 py-1 rounded-md transition flex items-center gap-1 active:scale-95"
+                title="Clear all items from invoice"
+              >
+                <Trash2 className="w-3 h-3" />
+                <span>Clear</span>
+              </button>
+            </>
+          )}
+        </div>
       </div>
 
       {/* Cart Items List */}
@@ -130,19 +169,94 @@ export const CartView: React.FC<CartViewProps> = ({ onOpenCheckout }) => {
 
       {/* Payment Summary */}
       <div className="pt-3 border-t border-slate-200 shrink-0 space-y-2">
-        <h3 className="font-bold text-xs text-slate-900 tracking-wide uppercase">
-          Payment Summary
-        </h3>
+        <div className="flex items-center justify-between">
+          <h3 className="font-bold text-xs text-slate-900 tracking-wide uppercase">
+            Payment Summary
+          </h3>
+          {discount && (
+            <span className="text-[10px] font-bold text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded">
+              Discount Active
+            </span>
+          )}
+        </div>
 
-        <div className="space-y-1.5 text-xs text-slate-500">
+        {/* Discount Trigger / Active Card */}
+        {!discount ? (
+          <button
+            type="button"
+            disabled={items.length === 0}
+            onClick={() => setIsDiscountModalOpen(true)}
+            className="w-full flex items-center justify-between px-2.5 py-2 rounded-lg bg-amber-50/70 hover:bg-amber-100/90 border border-amber-200 text-amber-900 text-xs font-bold transition disabled:opacity-50 disabled:pointer-events-none active:scale-[0.99]"
+          >
+            <div className="flex items-center gap-1.5">
+              <Award className="w-3.5 h-3.5 text-amber-600" />
+              <span>Senior / PWD / Promo</span>
+            </div>
+            <span className="text-[10px] text-amber-800 bg-amber-200/60 px-1.5 py-0.5 rounded font-semibold">
+              + Apply
+            </span>
+          </button>
+        ) : (
+          <div className="p-2.5 rounded-lg bg-amber-50 border border-amber-200 space-y-1">
+            <div className="flex items-center justify-between text-xs font-bold text-amber-950">
+              <div className="flex items-center gap-1.5 min-w-0">
+                <Award className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                <span className="truncate">{breakdown.discountLabel}</span>
+              </div>
+              <div className="flex items-center gap-1.5 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setIsDiscountModalOpen(true)}
+                  className="text-[11px] text-blue-600 hover:text-blue-800 font-semibold"
+                >
+                  Edit
+                </button>
+                <button
+                  type="button"
+                  onClick={clearDiscount}
+                  className="w-4 h-4 rounded text-slate-400 hover:text-rose-600 flex items-center justify-center transition"
+                  title="Remove Discount"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </div>
+            </div>
+            {discount.idNumber && (
+              <p className="text-[10px] font-mono text-amber-800">
+                ID: {discount.idNumber} {discount.customerName ? `• ${discount.customerName}` : ''}
+              </p>
+            )}
+          </div>
+        )}
+
+        <div className="space-y-1.5 text-xs text-slate-500 pt-1">
           <div className="flex justify-between">
-            <span>Sub Total</span>
+            <span>Sub Total (Gross)</span>
             <span className="font-bold text-slate-800">{currency}{subtotal.toFixed(2)}</span>
           </div>
+
+          {/* Statutory VAT Exemption */}
+          {breakdown.vatExemptAmount > 0 && (
+            <div className="flex justify-between text-amber-700 font-medium">
+              <span>Less 12% VAT Exemption</span>
+              <span className="font-bold">-{currency}{breakdown.vatExemptAmount.toFixed(2)}</span>
+            </div>
+          )}
+
+          {/* Discount deduction */}
+          {breakdown.discountAmount > 0 && (
+            <div className="flex justify-between text-rose-600 font-medium">
+              <span>Less Discount ({breakdown.discountLabel.split(' ')[0]})</span>
+              <span className="font-bold">-{currency}{breakdown.discountAmount.toFixed(2)}</span>
+            </div>
+          )}
+
+          {/* Regular VAT if mixed or regular */}
           <div className="flex justify-between">
-            <span>Tax (12% Incl)</span>
-            <span className="font-bold text-slate-800">{currency}{tax.toFixed(2)}</span>
+            <span>Tax ({breakdown.vatExemptAmount > 0 ? 'Regular VAT' : '12% VAT Incl'})</span>
+            <span className="font-bold text-slate-800">{currency}{breakdown.tax.toFixed(2)}</span>
           </div>
+
           <div className="flex justify-between text-sm font-black text-slate-900 pt-2 border-t border-slate-200">
             <span>Total Payment</span>
             <span className="text-base text-blue-600">{currency}{total.toFixed(2)}</span>
@@ -150,7 +264,7 @@ export const CartView: React.FC<CartViewProps> = ({ onOpenCheckout }) => {
         </div>
 
         {/* Payment Method Pills */}
-        <div className="grid grid-cols-3 gap-1.5 pt-2">
+        <div className="grid grid-cols-3 gap-1.5 pt-1.5">
           {paymentOptions.map(({ id, label, icon: Icon }) => {
             const isSelected = paymentMethod === id;
             return (
@@ -184,6 +298,25 @@ export const CartView: React.FC<CartViewProps> = ({ onOpenCheckout }) => {
           <ArrowRight className="w-4 h-4 stroke-[2.5]" />
         </button>
       </div>
+
+      {/* Discount Modal */}
+      <DiscountModal
+        isOpen={isDiscountModalOpen}
+        onClose={() => setIsDiscountModalOpen(false)}
+      />
+
+      {/* Hold Current Cart Modal */}
+      <HoldCartModal
+        isOpen={isHoldModalOpen}
+        onClose={() => setIsHoldModalOpen(false)}
+        defaultHoldNumber={heldOrdersCount + 1}
+      />
+
+      {/* Held / Parked Orders Drawer Modal */}
+      <HeldOrdersModal
+        isOpen={isHeldOrdersModalOpen}
+        onClose={() => setIsHeldOrdersModalOpen(false)}
+      />
     </aside>
   );
 };

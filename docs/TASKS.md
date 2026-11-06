@@ -58,6 +58,22 @@
 - [x] Integrate camera scan buttons into Header search bar, Inventory search bar, and Add/Edit Product modal.
 - [x] Add Barcode Scanner diagnostics and test pad in Settings screen.
 
+## Phase 4.7: Senior Citizen, PWD & Statutory Discounts Engine (PRD 3.7)
+- [x] Define TypeScript discount interfaces & types (`DiscountType`, `CartDiscount`, `DiscountCalculation`).
+- [x] Update `useCartStore` with discount state, statutory calculations (12% VAT exemption, 20% Senior/PWD discount, pax sharing, percentage, and fixed amount), and clear action.
+- [x] Build touch-friendly `DiscountModal` with tabs for Senior Citizen / PWD, Percentage Promos, and Fixed Vouchers.
+- [x] Integrate Discount button and live deduction breakdown rows (Subtotal, Less VAT, Less Discount, Grand Total) in `CartView` Invoice panel.
+- [x] Update checkout transaction creation in `CheckoutModal` to persist statutory discount data to IndexedDB orders.
+- [x] Update ESC/POS thermal receipt template (`printer.ts`) and on-screen receipt simulation to print BIR-compliant Senior/PWD lines and customer signature area.
+
+## Phase 4.8: Hold Order & Parked Cart System (PRD 3.8)
+- [x] Define `HeldOrder` interface in `src/types/index.ts` and add `heldOrders` table to Dexie DB schema in `src/core/db/index.ts`.
+- [x] Implement store actions in `useCartStore` for holding an order, recalling an order, and seamless cart swapping.
+- [x] Build `HoldCartModal` allowing fast 1-tap tagging (auto-assigned `Hold #1, #2` or custom name/table).
+- [x] Build `HeldOrdersModal` (drawer/modal) displaying all parked carts with item preview, elapsed time, total, and 1-tap Recall / Discard buttons.
+- [x] Add "Hold" button and live "Held Carts" badge pill in `CartView` and `Header`.
+- [x] Verify build (`npm run build`) and sync outputs to Android (`npx cap sync`).
+
 ## Phase 5: Cloud Sync Gateway & Outbox Engine
 - [ ] Implement background Outbox sync worker (`sync_queue` table).
 - [ ] Build online/offline connection listener with real-time UI indicator pill.

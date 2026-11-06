@@ -25,6 +25,20 @@
   - **Touch Points:** Integrated into Top Header Bar, Inventory Search Bar, and Add/Edit Product Modal.
   - **Implementation Verification:** Barcode engine bundled using `@zxing/library` + native `BarcodeDetector` fallback, verified with `npm run build` and synced to Android via `npx cap sync`.
 
+- **Discount & Statutory Rules (RA 9994 & RA 10754):**
+  - **No Double Discounting:** Stacking is prohibited by law. Customer can apply either a Senior/PWD discount OR a promo voucher.
+  - **Statutory Formula:** Strip 12% VAT (`Net of VAT = Gross / 1.12`), then apply 20% discount on the Net of VAT.
+  - **Default Coverage:** 100% of current cart by default, with stepper support for group bill sharing.
+  - **BIR Audit:** Senior/PWD Name, ID Number, and calculated VAT-exempt sales recorded in order payload and thermal receipt.
+  - **Implementation Verification:** Verified statutory formula, live breakdown in CartView, thermal receipt generation, and synced to Capacitor Android.
+
+- **Hold Order & Parked Cart Architecture:**
+  - **Stock Deductions:** Deducted ONLY on completed checkout; parked orders never deduct or skew inventory.
+  - **Auto-Tagging UX:** Dialog pre-fills auto-incrementing tag (`Hold #1`, `Hold #2`), editable to customer name or table number with 1 tap.
+  - **Collision Safety:** Recalling a held order into a non-empty cart seamlessly auto-parks the active cart first to prevent losing items.
+  - **Persistence:** Stored in Dexie IndexedDB `held_orders` table to survive browser refreshes and tablet reboots.
+  - **Implementation Verification:** Created `HoldCartModal`, `HeldOrdersModal`, live query badge in `Header` and `CartView`, verified with `npm run build` and synced to Android via `npx cap sync`.
+
 ## Target Personas
 1. **Micro / Solo User:** Standalone Android tablet running the **`.apk`** with no continuous internet. Daily operations and Z-reports are 100% self-contained on the device.
 2. **Medium Business:** Multiple terminals (desktops + tablets) syncing through a centralized cloud backend with role-based cashier PINs and branch management.

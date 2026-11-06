@@ -105,6 +105,36 @@ The viewport is divided into three primary zones in a landscape tablet/desktop v
   - Inventory search bar scan icon: `p-2 rounded-lg bg-slate-100 text-slate-600 hover:bg-blue-50 hover:text-blue-600`.
   - Add/Edit Product Modal barcode field: `px-3 py-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 text-xs font-medium border border-blue-200`.
 
+### 3.6. Discount Modal & Cart Invoice Deductions (Restoe Tokens)
+- **Cart Invoice Trigger:**
+  - Dedicated "Add Discount" button in the Invoice payment summary: `flex items-center justify-between p-2 rounded-lg bg-amber-50/70 border border-amber-200 text-amber-800 text-xs font-bold hover:bg-amber-100 transition-colors`.
+- **Active Discount Pill:**
+  - High-visibility deduction tags in the Invoice summary:
+    - VAT Exemption row: `text-[11px] text-amber-700 font-semibold`.
+    - Statutory / Custom Discount row: `text-xs text-rose-600 font-bold flex items-center justify-between`.
+    - Quick remove button: `text-slate-400 hover:text-rose-600 transition`.
+- **Discount Modal Container:**
+  - Dialog: Centered modal card `rounded-2xl bg-white border border-slate-200 shadow-2xl max-w-md w-full p-6 space-y-4`.
+  - Segmented Tab Selector: 3 pills `[Senior/PWD (Statutory)]`, `[Percentage (%)]`, `[Fixed (₱)]` with active `bg-blue-600 text-white shadow-xs`.
+  - Form Fields: `rounded-lg border border-slate-200 bg-slate-50 px-3.5 py-2 text-xs font-medium text-slate-800 focus:ring-2 focus:ring-blue-500 focus:bg-white`.
+  - Preset Discount Grid: 4-column quick pill grid `[5%] [10%] [15%] [20%] [50%]` with subtle borders and active blue state.
+  - Primary Action: Sticky modal footer with `Apply Discount` (`bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 rounded-lg shadow-sm`).
+
+### 3.7. Hold Order & Parked Cart UI (Restoe Tokens)
+- **Invoice Panel Action Triggers:**
+  - "Hold Cart" Button in Invoice Header: Compact pill button `px-2.5 py-1 rounded-md bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 text-[11px] font-bold flex items-center gap-1 transition active:scale-95`.
+  - "Held Carts" Counter in Top Header or Invoice: Rounded badge pill with animated amber pulse dot: `bg-slate-100 hover:bg-amber-50 border border-slate-200 hover:border-amber-300 text-slate-700 hover:text-amber-900 px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5`.
+- **Hold Prompt Modal:**
+  - Compact modal dialog prompting for optional Order Tag (e.g. "Table 3 - Sir Alex", "Takeout #12").
+  - Instant 1-tap quick auto-tag suggestions: `[Table #] [Takeout] [Walk-in]`.
+- **Held Orders Drawer / Modal:**
+  - Modal Card: `bg-white rounded-2xl border border-slate-200 shadow-2xl max-w-lg w-full overflow-hidden flex flex-col`.
+  - Parked Order Item Cards:
+    - Card container: `p-3.5 rounded-xl border border-slate-200 bg-slate-50/60 hover:bg-white hover:border-blue-300 hover:shadow-sm transition-all flex flex-col gap-2`.
+    - Tag & Timestamp row: Bold title with elapsed time badge (`text-[10px] text-slate-400 font-medium`).
+    - Items summary preview: `text-xs text-slate-600 line-clamp-1`.
+    - Action row: `[Recall Order]` in vibrant blue (`bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs px-3.5 py-1.5 rounded-lg`) and `[Discard]` button in muted red (`text-rose-600 hover:bg-rose-50 p-1.5 rounded-lg`).
+
 ---
 
 ## 4. Skeleton Loading Patterns (Zero-Latency Perceived Performance)

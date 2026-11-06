@@ -37,6 +37,29 @@ export interface OrderItem {
   subtotal: number;
 }
 
+export type DiscountType = 'NONE' | 'SENIOR' | 'PWD' | 'PERCENT' | 'FIXED';
+
+export interface CartDiscount {
+  type: DiscountType;
+  label: string;
+  value: number; // percentage (e.g. 20) or fixed amount (e.g. 50)
+  customerName?: string;
+  idNumber?: string;
+  totalGuests?: number;
+  seniorCount?: number;
+}
+
+export interface HeldOrder {
+  id: string; // UUIDv4
+  tag: string; // e.g. "Hold #1" or "Table 4"
+  cashierName: string;
+  items: CartItem[];
+  discount: CartDiscount | null;
+  subtotal: number;
+  total: number;
+  createdAt: number; // timestamp
+}
+
 export interface Order {
   id: string; // UUIDv4
   orderNumber: string; // e.g. ORD-20261103-0001
@@ -46,6 +69,11 @@ export interface Order {
   discount: number;
   tax: number;
   total: number;
+  discountType?: DiscountType;
+  discountCustomerName?: string;
+  discountIdNumber?: string;
+  vatExemptAmount?: number;
+  seniorDiscountAmount?: number;
   paymentMethod: PaymentMethod;
   amountTendered: number;
   changeDue: number;

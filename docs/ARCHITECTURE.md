@@ -110,6 +110,17 @@ erDiagram
     ORDER ||--o{ PAYMENT : paid_with
     USER ||--o{ SHIFT : opens
     BRANCH ||--o| SETTINGS : configures
+    BRANCH ||--o{ HELD_ORDER : stores
+
+    HELD_ORDER {
+        string id PK "UUID"
+        string tag "Table 4 or Hold #1"
+        string cashier_name
+        json items "Cart items with quantities & notes"
+        json discount "Active statutory or promo discount"
+        decimal subtotal
+        datetime created_at
+    }
 
     SETTINGS {
         string id PK "settings-active"
@@ -135,6 +146,10 @@ erDiagram
         decimal tax
         decimal discount
         decimal total
+        string discount_type "NONE, SENIOR, PWD, PERCENT, FIXED"
+        string discount_customer_name "Senior or PWD Name"
+        string discount_id_number "Senior or PWD ID Number"
+        decimal vat_exempt_amount "Exempted 12% VAT"
         string status "COMPLETED, VOID, REFUNDED"
         datetime created_at
     }

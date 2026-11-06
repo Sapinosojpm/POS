@@ -73,15 +73,40 @@ QTY  ITEM                  TOTAL
     const totalQty = items.reduce((acc, i) => acc + i.quantity, 0);
     text += `${divider}
 TOTAL ITEMS:                     ${totalQty}
-SUBTOTAL:                   ${cur}${order.subtotal.toFixed(2)}
-TAX/VAT (${settings.taxRate}%):             ${cur}${order.tax.toFixed(2)}
+GROSS SUBTOTAL:             ${cur}${order.subtotal.toFixed(2)}
+`;
+
+    if (order.vatExemptAmount && order.vatExemptAmount > 0) {
+      text += `LESS 12% VAT EXEMPT:       -${cur}${order.vatExemptAmount.toFixed(2)}\n`;
+    }
+
+    if (order.discount && order.discount > 0) {
+      const discTag = order.discountType === 'SENIOR'
+        ? 'LESS 20% SC DISC:'
+        : order.discountType === 'PWD'
+        ? 'LESS 20% PWD DISC:'
+        : 'LESS DISCOUNT:    ';
+      text += `${discTag.padEnd(28, ' ')}-${cur}${order.discount.toFixed(2)}\n`;
+    }
+
+    text += `TAX/VAT (${settings.taxRate}%):             ${cur}${order.tax.toFixed(2)}
 ${doubleDivider}
-TOTAL AMOUNT:               ${cur}${order.total.toFixed(2)}
+TOTAL AMOUNT DUE:           ${cur}${order.total.toFixed(2)}
 ${doubleDivider}
 TENDERED (${order.paymentMethod}):          ${cur}${order.amountTendered.toFixed(2)}
 CHANGE:                     ${cur}${order.changeDue.toFixed(2)}
 ${divider}
-${settings.receiptFooter.split('\n').map(line => center(line)).join('\n')}
+`;
+
+    if (order.discountIdNumber || order.discountCustomerName) {
+      text += `SC/PWD ID:  ${order.discountIdNumber || 'N/A'}\n`;
+      if (order.discountCustomerName) {
+        text += `Customer:   ${order.discountCustomerName}\n`;
+      }
+      text += `Signature:  ______________________\n${divider}\n`;
+    }
+
+    text += `${settings.receiptFooter.split('\n').map(line => center(line)).join('\n')}
 \n\n\n`;
 
     return text;

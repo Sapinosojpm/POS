@@ -16,6 +16,7 @@ import { NotificationStack } from './components/NotificationStack';
 import { ToastContainer } from './components/ToastContainer';
 import { BarcodeScannerModal } from './components/BarcodeScannerModal';
 import { AddProductModal } from './components/AddProductModal';
+import { HeldOrdersModal } from './components/HeldOrdersModal';
 import { playScanSuccessSound, playScanErrorSound, triggerHaptic } from './core/hardware/scannerFeedback';
 import { toast } from './store/useToastStore';
 import { useCartStore } from './store/useCartStore';
@@ -28,6 +29,7 @@ export function App() {
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [isAddProductOpen, setIsAddProductOpen] = useState(false);
+  const [isHeldOrdersOpen, setIsHeldOrdersOpen] = useState(false);
   const [pendingBarcode, setPendingBarcode] = useState<string | undefined>(undefined);
 
   const addItem = useCartStore((state) => state.addItem);
@@ -176,6 +178,7 @@ export function App() {
               setSearchQuery={setSearchQuery}
               onOpenNotifications={() => setIsNotificationsOpen(true)}
               onOpenScanner={() => setIsScannerOpen(true)}
+              onOpenHeldOrders={() => setIsHeldOrdersOpen(true)}
             />
 
             <ProductCatalog
@@ -245,6 +248,12 @@ export function App() {
         }}
         categories={categories}
         initialBarcode={pendingBarcode}
+      />
+
+      {/* Held / Parked Orders Drawer Modal (Triggered from Top Header) */}
+      <HeldOrdersModal
+        isOpen={isHeldOrdersOpen}
+        onClose={() => setIsHeldOrdersOpen(false)}
       />
 
       {/* Premium Notification Stack */}
