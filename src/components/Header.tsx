@@ -1,8 +1,8 @@
 import React from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { Search, Bell, Wifi, WifiOff, Scan, PackageOpen } from 'lucide-react';
-import { useCartStore } from '../store/useCartStore';
+import { Search, Bell, Wifi, WifiOff, Scan, PackageOpen, RefreshCw, AlertTriangle } from 'lucide-react';
 import { useSettingsStore } from '../store/useSettingsStore';
+import { useSyncStore } from '../core/sync/syncStore';
 import { db } from '../core/db';
 
 interface HeaderProps {
@@ -11,6 +11,7 @@ interface HeaderProps {
   onOpenNotifications: () => void;
   onOpenScanner?: () => void;
   onOpenHeldOrders?: () => void;
+  onOpenSyncModal?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -19,8 +20,9 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenNotifications,
   onOpenScanner,
   onOpenHeldOrders,
+  onOpenSyncModal,
 }) => {
-  const { isOnline } = useCartStore();
+  const { status, pendingCount } = useSyncStore();
   const { settings } = useSettingsStore();
   const heldOrdersCount = useLiveQuery(() => db.heldOrders.count(), []) || 0;
 
@@ -86,28 +88,49 @@ export const Header: React.FC<HeaderProps> = ({
 
       {/* Right Controls: Flag/Currency, Notification, Cashier Profile */}
       <div className="flex items-center space-x-2.5">
-        {/* Offline / Online Pill */}
-        <div
-          className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-semibold ${
-            isOnline
-              ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-              : 'bg-amber-50 text-amber-700 border border-amber-200'
+        {/* Cloud Sync Gateway Indicator (Clickable to open audit popover) */}
+        <button
+          type="button"
+          onClick={onOpenSyncModal}
+          className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-semibold transition active:scale-95 shadow-2xs ${
+            status === 'SYNCED'
+              ? 'bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200'
+              : status === 'SYNCING'
+              ? 'bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200'
+              : status === 'PAUSED'
+              ? 'bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200'
+              : 'bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200'
           }`}
+          title="Click to view PostgreSQL Sync Gateway details & force sync"
         >
-          {isOnline ? (
+          {status === 'SYNCED' ? (
             <>
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+              <span className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_6px_#10b981]"></span>
               <Wifi className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Online</span>
+              <span className="hidden sm:inline">Synced</span>
+            </>
+          ) : status === 'SYNCING' ? (
+            <>
+              <RefreshCw className="w-3.5 h-3.5 animate-spin text-blue-600" />
+              <span className="hidden sm:inline">
+                {pendingCount > 0 ? `Syncing (${pendingCount})...` : 'Syncing...'}
+              </span>
+            </>
+          ) : status === 'PAUSED' ? (
+            <>
+              <AlertTriangle className="w-3.5 h-3.5 text-rose-600" />
+              <span className="hidden sm:inline">Sync Warning</span>
             </>
           ) : (
             <>
-              <span className="w-2 h-2 rounded-full bg-amber-500"></span>
+              <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
               <WifiOff className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Offline</span>
+              <span className="hidden sm:inline">
+                {pendingCount > 0 ? `Offline (${pendingCount} Queued)` : 'Offline'}
+              </span>
             </>
           )}
-        </div>
+        </button>
 
         {/* Currency / Flag Toggle */}
         <div className="flex items-center gap-1.5 px-2.5 py-1.5 bg-slate-50 rounded-md border border-slate-200 text-xs font-bold">

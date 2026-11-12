@@ -1,5 +1,5 @@
 import Dexie, { type Table } from 'dexie';
-import type { Category, Product, Order, OrderItem, Shift, SyncEvent, HeldOrder } from '../../types';
+import type { Category, Product, Order, OrderItem, Shift, SyncEvent, HeldOrder, StockMovement } from '../../types';
 
 export class POSDatabase extends Dexie {
   categories!: Table<Category, string>;
@@ -9,6 +9,7 @@ export class POSDatabase extends Dexie {
   shifts!: Table<Shift, string>;
   syncQueue!: Table<SyncEvent, string>;
   heldOrders!: Table<HeldOrder, string>;
+  stockLedger!: Table<StockMovement, string>;
 
   constructor() {
     super('UniversalHybridPOS_DB');
@@ -30,6 +31,17 @@ export class POSDatabase extends Dexie {
       shifts: 'id, cashierName, openedAt, status',
       syncQueue: 'id, entity, action, createdAt, synced',
       heldOrders: 'id, tag, cashierName, createdAt'
+    });
+
+    this.version(3).stores({
+      categories: 'id, name',
+      products: 'id, name, barcode, sku, categoryId, price',
+      orders: 'id, orderNumber, cashierName, shiftId, createdAt, synced, status',
+      orderItems: 'id, orderId, productId',
+      shifts: 'id, cashierName, openedAt, status',
+      syncQueue: 'id, entity, action, createdAt, synced',
+      heldOrders: 'id, tag, cashierName, createdAt',
+      stockLedger: 'id, productId, reason, createdAt'
     });
   }
 }

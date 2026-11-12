@@ -63,10 +63,18 @@ flowchart TB
 - **Audio & Haptic Feedback Bridge:** Native Web Audio API dual-frequency synthesizer (`880Hz` high beep for success, `220Hz` low buzz for missing item) paired with `navigator.vibrate` for tactile feedback without audio asset loading latency.
 - **Protocol:** Raw ESC/POS byte generator (`esc-pos-encoder`).
 
-### 2.3. Cloud & Backend (For Medium Companies & Sync)
-- **Backend:** Node.js (NestJS / Fastify) or **Supabase (PostgreSQL)**
-- **Authentication:** JWT with offline refresh token caching + local 4-to-6 digit PIN validation for cashiers.
-- **Sync Protocol:** WebSocket or HTTP/2 Delta Pull & Push.
+### 2.3. Backend Architecture (Self-Hostable PostgreSQL Sync Gateway)
+- **Primary Backend:** **Pure PostgreSQL + REST Sync Gateway**
+  - Standalone reproducible PostgreSQL schema under `sql/postgres_schema.sql`.
+  - Zero external cloud vendor lock-in (no proprietary Supabase client or Firebase requirements).
+  - Terminal-side implementation powered by pure browser `fetch` API.
+  - Native JSONB payload support, multi-branch partitioning, and high-performance indexed queries.
+- **Terminal Authentication:**
+  - Machine Identity model: Terminals are authorized using a persistent `branch_id` and Device Token configured in POS settings.
+  - Cashiers authenticate locally via fast 4-digit PINs; cashiers are never blocked by cloud auth expiration or network downtime.
+- **Sync Protocol:**
+  - **Push:** Transactional upsert of batches of 50 outbox records via `POST /api/sync/push`.
+  - **Pull:** Smart Delta Polling via `GET /api/sync/pull?since=:timestamp` on app startup, network reconnection, 5-minute background intervals, or manual trigger.
 
 ---
 

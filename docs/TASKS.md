@@ -74,11 +74,24 @@
 - [x] Add "Hold" button and live "Held Carts" badge pill in `CartView` and `Header`.
 - [x] Verify build (`npm run build`) and sync outputs to Android (`npx cap sync`).
 
-## Phase 5: Cloud Sync Gateway & Outbox Engine
-- [ ] Implement background Outbox sync worker (`sync_queue` table).
-- [ ] Build online/offline connection listener with real-time UI indicator pill.
-- [ ] Setup cloud database backend (Supabase / PostgreSQL).
-- [ ] Implement incremental pull: download new products and price changes from cloud.
+## Phase 4.9: Inventory CSV Import/Export & Bulk Stock Adjustment Engine
+- [x] Build CSV Export utility (`src/core/inventory/csvExport.ts`) with UTF-8 BOM, RFC 4180 escaping, and text barcode formatting.
+- [x] Build CSV Parser utility (`src/core/inventory/csvParser.ts`) with header aliasing, validation, and sample template generator.
+- [x] Build CSV Import Modal (`src/components/CsvImportModal.tsx`) with drag-and-drop dropzone, preview table (new vs update), and error feedback.
+- [x] Add Multi-Select Checkboxes to Inventory table in `InventoryView.tsx`.
+- [x] Build Floating Bulk Action Dock (`[+5]`, `[+10]`, `[+25]`, `[+50]`, `[Set Exact]`, `[Delete Selected]`) in `InventoryView.tsx`.
+- [x] Implement atomic bulk stock adjustment transaction writing to `db.products`, `db.stockLedger`, and `db.syncQueue`.
+- [x] Verify build with `npm run build` and sync assets to Android via `npx cap sync`.
+
+## Phase 5: PostgreSQL Backend Infrastructure & Sync Gateway
+- [x] Create PostgreSQL schema `sql/postgres_schema.sql` defining relational tables (`branches`, `devices`, `categories`, `products`, `orders`, `order_items`, `shifts`, `stock_ledger`) with UUID keys, indexes, and updated_at triggers.
+- [x] Implement standalone Node.js sync server (`server/index.mjs`) implementing `POST /api/sync/push` (batch idempotent PostgreSQL upserts) and `GET /api/sync/pull` (delta changes since timestamp).
+- [x] Implement native fetch sync client (`src/core/sync/syncClient.ts`) with zero third-party dependencies, offline tolerance, and configurable server endpoint.
+- [x] Build background Outbox Push worker (`src/core/sync/syncWorker.ts`) to flush pending items from Dexie `syncQueue` in idempotent batches of 50.
+- [x] Build Delta Pull worker (`src/core/sync/pullWorker.ts`) to incrementally synchronize newly added/updated products and categories from PostgreSQL into Dexie.
+- [x] Implement reactive Sync Manager hook (`src/core/sync/useSyncManager.ts`) coordinating network listeners, 5-minute delta polling, and exponential backoff retry.
+- [x] Integrate Sync Gateway status badge & audit popover in `Header.tsx` conforming to Restoe tokens (`Synced`, `Syncing`, `Offline (N Queued)`).
+- [x] Verify build with `npm run build` and sync assets to Android via `npx cap sync`.
 
 ## Phase 6: Medium Company Multi-Branch & Dashboard
 - [ ] Multi-terminal live testing in same store (prevent duplicate offline invoice numbers).

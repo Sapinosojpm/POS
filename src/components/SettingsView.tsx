@@ -349,6 +349,28 @@ export const SettingsView: React.FC = () => {
                   </p>
                 </div>
 
+                {/* Active Brand Logo Card */}
+                <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl flex items-center gap-4">
+                  <div className="w-16 h-16 rounded-2xl bg-white border border-slate-200 p-1 flex items-center justify-center shadow-xs overflow-hidden shrink-0">
+                    <img
+                      src="/logo.png"
+                      alt="Active Store Logo"
+                      className="w-full h-full object-contain"
+                    />
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-blue-600 block">
+                      Active POS Logo
+                    </span>
+                    <h4 className="font-bold text-xs text-slate-800 mt-0.5">
+                      Fast POS Terminal & Cart Emblem
+                    </h4>
+                    <p className="text-[11px] text-slate-500">
+                      Displayed on the navigation sidebar, browser tab, and POS terminal display.
+                    </p>
+                  </div>
+                </div>
+
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                   <div>
                     <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">

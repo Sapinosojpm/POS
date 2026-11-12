@@ -14,6 +14,12 @@ import {
   Filter,
   RefreshCw,
   Scan,
+  Download,
+  Upload,
+  CheckSquare,
+  Square,
+  Layers,
+  PackagePlus,
 } from 'lucide-react';
 import { db } from '../core/db';
 import { toast } from '../store/useToastStore';
@@ -21,6 +27,8 @@ import { useCartStore } from '../store/useCartStore';
 import type { Product, Category } from '../types';
 import { AddProductModal } from './AddProductModal';
 import { BarcodeScannerModal } from './BarcodeScannerModal';
+import { CsvImportModal } from './CsvImportModal';
+import { exportProductsToCsv } from '../core/inventory/csvExport';
 
 interface InventoryViewProps {
   products: Product[];
@@ -35,6 +43,14 @@ export const InventoryView: React.FC<InventoryViewProps> = ({ products, categori
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [isScannerOpen, setIsScannerOpen] = useState(false);
+
+  // Bulk Operations & CSV State
+  const [selectedProductIds, setSelectedProductIds] = useState<Set<string>>(new Set());
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [isCustomBulkOpen, setIsCustomBulkOpen] = useState(false);
+  const [customStockValue, setCustomStockValue] = useState<number>(10);
+  const [customStockMode, setCustomStockMode] = useState<'ADD' | 'SET'>('ADD');
+  const [isBulkProcessing, setIsBulkProcessing] = useState(false);
 
   // Stats calculation
   const totalItemsCount = products.length;
@@ -86,6 +102,123 @@ export const InventoryView: React.FC<InventoryViewProps> = ({ products, categori
     return matchesCat && matchesSearch && matchesStock;
   });
 
+  // Multi-Select Handlers
+  const isAllSelected =
+    filteredProducts.length > 0 &&
+    filteredProducts.every((p) => selectedProductIds.has(p.id));
+
+  const handleToggleSelect = (id: string) => {
+    setSelectedProductIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  };
+
+  const handleToggleSelectAll = () => {
+    if (isAllSelected) {
+      setSelectedProductIds((prev) => {
+        const next = new Set(prev);
+        filteredProducts.forEach((p) => next.delete(p.id));
+        return next;
+      });
+    } else {
+      setSelectedProductIds((prev) => {
+        const next = new Set(prev);
+        filteredProducts.forEach((p) => next.add(p.id));
+        return next;
+      });
+    }
+  };
+
+  // Bulk Restock Handler
+  const handleBulkStock = async (amount: number, mode: 'ADD' | 'SET' = 'ADD') => {
+    const ids = Array.from(selectedProductIds);
+    if (ids.length === 0) return;
+    setIsBulkProcessing(true);
+
+    try {
+      await db.transaction('rw', db.products, db.stockLedger, db.syncQueue, async () => {
+        for (const id of ids) {
+          const prod = await db.products.get(id);
+          if (!prod) continue;
+          const newStock = mode === 'ADD' ? Math.max(0, prod.stock + amount) : Math.max(0, amount);
+          const effectiveDelta = newStock - prod.stock;
+
+          await db.products.update(id, { stock: newStock });
+
+          await db.stockLedger.add({
+            id: `stk-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+            productId: id,
+            delta: effectiveDelta,
+            reason: 'RESTOCK',
+            notes: `Bulk ${mode === 'ADD' ? `+${amount}` : `set to ${amount}`}`,
+            createdAt: Date.now(),
+          });
+
+          await db.syncQueue.add({
+            id: `sync-stk-${id}-${Date.now()}`,
+            entity: 'stock',
+            action: 'CREATE',
+            payload: { productId: id, delta: effectiveDelta, reason: 'RESTOCK' },
+            createdAt: Date.now(),
+            synced: false,
+          });
+        }
+      });
+
+      toast.success(
+        'Bulk Stock Updated',
+        `Adjusted stock for ${ids.length} products (${mode === 'ADD' ? `+${amount}` : `set to ${amount}`}).`
+      );
+      setSelectedProductIds(new Set());
+      setIsCustomBulkOpen(false);
+    } catch (err: any) {
+      console.error('Bulk restock error:', err);
+      toast.error('Restock Failed', err?.message || 'Could not update stock.');
+    } finally {
+      setIsBulkProcessing(false);
+    }
+  };
+
+  // Bulk Delete Handler
+  const handleBulkDelete = async () => {
+    const ids = Array.from(selectedProductIds);
+    if (ids.length === 0) return;
+    if (!confirm(`Are you sure you want to delete ${ids.length} selected products from your catalog?`)) return;
+
+    try {
+      await db.transaction('rw', db.products, db.syncQueue, async () => {
+        for (const id of ids) {
+          await db.products.delete(id);
+          await db.syncQueue.add({
+            id: `sync-del-${id}-${Date.now()}`,
+            entity: 'product',
+            action: 'DELETE',
+            payload: { id },
+            createdAt: Date.now(),
+            synced: false,
+          });
+        }
+      });
+
+      toast.info('Products Deleted', `Removed ${ids.length} products from your catalog.`);
+      setSelectedProductIds(new Set());
+    } catch (err: any) {
+      console.error('Bulk delete error:', err);
+      toast.error('Delete Failed', 'Could not delete selected products.');
+    }
+  };
+
+  const handleExport = () => {
+    exportProductsToCsv(products, categories);
+    toast.success('Inventory Exported', 'Downloaded complete product catalog to CSV.');
+  };
+
   const clearAllFilters = () => {
     setSearch('');
     setSelectedCat('all');
@@ -101,20 +234,45 @@ export const InventoryView: React.FC<InventoryViewProps> = ({ products, categori
         <div>
           <h1 className="text-xl font-bold text-slate-900 tracking-tight">Stock & Inventory Management</h1>
           <p className="text-xs text-slate-400 font-medium mt-0.5">
-            Track stock levels, restock shipments, and monitor profit margins offline
+            Track stock levels, bulk restock shipments, and import/export CSV catalogs
           </p>
         </div>
 
-        <button
-          onClick={() => {
-            setEditingProduct(null);
-            setIsModalOpen(true);
-          }}
-          className="self-start sm:self-auto px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-lg shadow-sm flex items-center gap-1.5 active:scale-95 transition"
-        >
-          <Plus className="w-4 h-4 stroke-[2]" />
-          <span>Add New Product</span>
-        </button>
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* Export CSV Button */}
+          <button
+            type="button"
+            onClick={handleExport}
+            className="px-3 py-2 bg-white hover:bg-slate-50 text-slate-700 hover:text-slate-900 border border-slate-200 rounded-lg text-xs font-bold shadow-2xs flex items-center gap-1.5 active:scale-95 transition"
+            title="Export all products to CSV format for Excel"
+          >
+            <Download className="w-3.5 h-3.5 text-slate-500" />
+            <span>Export CSV</span>
+          </button>
+
+          {/* Import CSV Button */}
+          <button
+            type="button"
+            onClick={() => setIsImportModalOpen(true)}
+            className="px-3 py-2 bg-white hover:bg-slate-50 text-slate-700 hover:text-slate-900 border border-slate-200 rounded-lg text-xs font-bold shadow-2xs flex items-center gap-1.5 active:scale-95 transition"
+            title="Import or update products from CSV file"
+          >
+            <Upload className="w-3.5 h-3.5 text-slate-500" />
+            <span>Import CSV</span>
+          </button>
+
+          {/* Add New Product Button */}
+          <button
+            onClick={() => {
+              setEditingProduct(null);
+              setIsModalOpen(true);
+            }}
+            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-lg shadow-sm flex items-center gap-1.5 active:scale-95 transition"
+          >
+            <Plus className="w-4 h-4 stroke-[2]" />
+            <span>Add New Product</span>
+          </button>
+        </div>
       </div>
 
       {/* Modern Interactive KPI Summary Cards */}
@@ -359,7 +517,21 @@ export const InventoryView: React.FC<InventoryViewProps> = ({ products, categori
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="border-b border-slate-200 bg-slate-50/80 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-                <th className="py-3 px-5">Product Details</th>
+                <th className="py-3 px-3 w-10 text-center">
+                  <button
+                    type="button"
+                    onClick={handleToggleSelectAll}
+                    className="text-slate-400 hover:text-blue-600 transition flex items-center justify-center mx-auto"
+                    title={isAllSelected ? 'Deselect All' : 'Select All'}
+                  >
+                    {isAllSelected ? (
+                      <CheckSquare className="w-4 h-4 text-blue-600" />
+                    ) : (
+                      <Square className="w-4 h-4" />
+                    )}
+                  </button>
+                </th>
+                <th className="py-3 px-4">Product Details</th>
                 <th className="py-3 px-3">Category</th>
                 <th className="py-3 px-3">Cost Price</th>
                 <th className="py-3 px-3">Retail Price</th>
@@ -372,7 +544,7 @@ export const InventoryView: React.FC<InventoryViewProps> = ({ products, categori
             <tbody className="divide-y divide-slate-100 text-xs">
               {filteredProducts.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="py-12 text-center text-slate-400">
+                  <td colSpan={9} className="py-12 text-center text-slate-400">
                     <div className="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center mx-auto mb-2 text-slate-400">
                       <Package className="w-6 h-6 stroke-1" />
                     </div>
@@ -395,11 +567,32 @@ export const InventoryView: React.FC<InventoryViewProps> = ({ products, categori
                   const category = categories.find((c) => c.id === p.categoryId);
                   const marginPercent =
                     p.price > 0 ? (((p.price - p.cost) / p.price) * 100).toFixed(0) : '0';
+                  const isChecked = selectedProductIds.has(p.id);
 
                   return (
-                    <tr key={p.id} className="hover:bg-slate-50/80 transition-colors">
+                    <tr
+                      key={p.id}
+                      className={`hover:bg-slate-50/80 transition-colors ${
+                        isChecked ? 'bg-blue-50/60' : ''
+                      }`}
+                    >
+                      {/* Selection Checkbox */}
+                      <td className="py-3 px-3 text-center">
+                        <button
+                          type="button"
+                          onClick={() => handleToggleSelect(p.id)}
+                          className="text-slate-400 hover:text-blue-600 transition flex items-center justify-center mx-auto"
+                        >
+                          {isChecked ? (
+                            <CheckSquare className="w-4 h-4 text-blue-600" />
+                          ) : (
+                            <Square className="w-4 h-4" />
+                          )}
+                        </button>
+                      </td>
+
                       {/* Image & Title */}
-                      <td className="py-3 px-5">
+                      <td className="py-3 px-4">
                         <div className="flex items-center gap-3">
                           <img
                             src={
@@ -524,6 +717,168 @@ export const InventoryView: React.FC<InventoryViewProps> = ({ products, categori
           </table>
         </div>
       </div>
+
+      {/* Floating Bulk Action Dock (When items are selected) */}
+      {selectedProductIds.size > 0 && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 bg-slate-900/95 backdrop-blur-md text-white px-5 py-3 rounded-2xl shadow-2xl border border-slate-700/80 flex items-center gap-4 animate-in slide-in-from-bottom duration-200 select-none">
+          {/* Selected Count Badge */}
+          <div className="flex items-center gap-2">
+            <span className="w-6 h-6 rounded-full bg-blue-600 text-white font-extrabold text-xs flex items-center justify-center">
+              {selectedProductIds.size}
+            </span>
+            <span className="text-xs font-bold text-slate-200 whitespace-nowrap">
+              {selectedProductIds.size === 1 ? 'Product selected' : 'Products selected'}
+            </span>
+            <button
+              type="button"
+              onClick={() => setSelectedProductIds(new Set())}
+              className="text-[11px] text-slate-400 hover:text-white underline ml-1"
+            >
+              Clear
+            </button>
+          </div>
+
+          <div className="w-px h-6 bg-slate-700" />
+
+          {/* Quick Increment Buttons */}
+          <div className="flex items-center gap-1.5">
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mr-1 hidden sm:inline">
+              Bulk Add:
+            </span>
+            {[5, 10, 25, 50].map((amt) => (
+              <button
+                key={amt}
+                type="button"
+                onClick={() => handleBulkStock(amt, 'ADD')}
+                disabled={isBulkProcessing}
+                className="px-2.5 py-1 bg-slate-800 hover:bg-blue-600 disabled:opacity-50 text-white text-xs font-bold rounded-lg border border-slate-700 transition active:scale-95"
+              >
+                +{amt}
+              </button>
+            ))}
+          </div>
+
+          <div className="w-px h-6 bg-slate-700" />
+
+          {/* Custom / Set Exact */}
+          <button
+            type="button"
+            onClick={() => {
+              setCustomStockValue(10);
+              setCustomStockMode('ADD');
+              setIsCustomBulkOpen(true);
+            }}
+            className="flex items-center gap-1 px-3 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white text-xs font-bold rounded-lg border border-slate-700 transition active:scale-95"
+          >
+            <Layers className="w-3.5 h-3.5 text-blue-400" />
+            <span>Custom / Exact</span>
+          </button>
+
+          {/* Bulk Delete */}
+          <button
+            type="button"
+            onClick={handleBulkDelete}
+            className="p-1.5 rounded-lg text-rose-400 hover:text-rose-300 hover:bg-rose-950/40 transition"
+            title="Delete Selected Products"
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+
+      {/* Custom Bulk Stock Modal */}
+      {isCustomBulkOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs select-none">
+          <div className="w-full max-w-sm bg-white rounded-2xl border border-slate-200 shadow-2xl p-5 space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
+                  <PackagePlus className="w-4 h-4" />
+                </div>
+                <div>
+                  <h4 className="font-bold text-sm text-slate-800">Bulk Stock Adjustment</h4>
+                  <p className="text-[11px] text-slate-400">
+                    Applying to {selectedProductIds.size} selected products
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsCustomBulkOpen(false)}
+                className="w-7 h-7 rounded-lg text-slate-400 hover:bg-slate-100 flex items-center justify-center"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Mode Selector */}
+            <div className="grid grid-cols-2 gap-2 p-1 bg-slate-100 rounded-xl text-xs font-bold">
+              <button
+                type="button"
+                onClick={() => setCustomStockMode('ADD')}
+                className={`py-1.5 rounded-lg transition ${
+                  customStockMode === 'ADD'
+                    ? 'bg-white text-blue-600 shadow-xs'
+                    : 'text-slate-600 hover:text-slate-800'
+                }`}
+              >
+                + Add To Stock
+              </button>
+              <button
+                type="button"
+                onClick={() => setCustomStockMode('SET')}
+                className={`py-1.5 rounded-lg transition ${
+                  customStockMode === 'SET'
+                    ? 'bg-white text-blue-600 shadow-xs'
+                    : 'text-slate-600 hover:text-slate-800'
+                }`}
+              >
+                = Set Exact Count
+              </button>
+            </div>
+
+            {/* Quantity Input */}
+            <div>
+              <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+                {customStockMode === 'ADD' ? 'Units to Add (+)' : 'Exact Stock Count'}
+              </label>
+              <input
+                type="number"
+                min={0}
+                value={customStockValue}
+                onChange={(e) => setCustomStockValue(Math.max(0, parseInt(e.target.value, 10) || 0))}
+                className="w-full bg-slate-50 border border-slate-200 px-3.5 py-2.5 rounded-xl text-sm font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white"
+              />
+            </div>
+
+            {/* Actions */}
+            <div className="flex gap-2 pt-1">
+              <button
+                type="button"
+                onClick={() => setIsCustomBulkOpen(false)}
+                className="flex-1 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-lg transition"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => handleBulkStock(customStockValue, customStockMode)}
+                disabled={isBulkProcessing}
+                className="flex-1 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-lg transition shadow-sm"
+              >
+                {isBulkProcessing ? 'Updating...' : `Apply (${selectedProductIds.size} Items)`}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* CSV Import Modal */}
+      <CsvImportModal
+        isOpen={isImportModalOpen}
+        onClose={() => setIsImportModalOpen(false)}
+        products={products}
+        categories={categories}
+      />
 
       {/* Add / Edit Modal */}
       <AddProductModal

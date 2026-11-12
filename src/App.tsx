@@ -17,6 +17,8 @@ import { ToastContainer } from './components/ToastContainer';
 import { BarcodeScannerModal } from './components/BarcodeScannerModal';
 import { AddProductModal } from './components/AddProductModal';
 import { HeldOrdersModal } from './components/HeldOrdersModal';
+import { SyncModal } from './components/SyncModal';
+import { useSyncManager } from './core/sync/useSyncManager';
 import { playScanSuccessSound, playScanErrorSound, triggerHaptic } from './core/hardware/scannerFeedback';
 import { toast } from './store/useToastStore';
 import { useCartStore } from './store/useCartStore';
@@ -30,7 +32,11 @@ export function App() {
   const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [isAddProductOpen, setIsAddProductOpen] = useState(false);
   const [isHeldOrdersOpen, setIsHeldOrdersOpen] = useState(false);
+  const [isSyncModalOpen, setIsSyncModalOpen] = useState(false);
   const [pendingBarcode, setPendingBarcode] = useState<string | undefined>(undefined);
+
+  // Initialize background PostgreSQL sync engine
+  useSyncManager();
 
   const addItem = useCartStore((state) => state.addItem);
   const setIsOnline = useCartStore((state) => state.setIsOnline);
@@ -179,6 +185,7 @@ export function App() {
               onOpenNotifications={() => setIsNotificationsOpen(true)}
               onOpenScanner={() => setIsScannerOpen(true)}
               onOpenHeldOrders={() => setIsHeldOrdersOpen(true)}
+              onOpenSyncModal={() => setIsSyncModalOpen(true)}
             />
 
             <ProductCatalog
@@ -254,6 +261,12 @@ export function App() {
       <HeldOrdersModal
         isOpen={isHeldOrdersOpen}
         onClose={() => setIsHeldOrdersOpen(false)}
+      />
+
+      {/* PostgreSQL Sync Gateway Audit & Config Modal */}
+      <SyncModal
+        isOpen={isSyncModalOpen}
+        onClose={() => setIsSyncModalOpen(false)}
       />
 
       {/* Premium Notification Stack */}

@@ -135,6 +135,51 @@ The viewport is divided into three primary zones in a landscape tablet/desktop v
     - Items summary preview: `text-xs text-slate-600 line-clamp-1`.
     - Action row: `[Recall Order]` in vibrant blue (`bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs px-3.5 py-1.5 rounded-lg`) and `[Discard]` button in muted red (`text-rose-600 hover:bg-rose-50 p-1.5 rounded-lg`).
 
+### 3.8. Cloud Sync Gateway Status Badges (Top Header)
+- **Component Location:** Mounted in the Top Header (`Header.tsx`) next to the quick search and notification bell.
+- **States & Tokens:**
+  - **Online & Synced:**
+    - Badge: `flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-semibold`.
+    - Indicator: `w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_6px_#10b981]`.
+    - Label: `Synced`.
+  - **Syncing in Progress (Flushing Outbox):**
+    - Badge: `flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-200 text-xs font-semibold`.
+    - Indicator: `w-3.5 h-3.5 animate-spin text-blue-600` (Lucide `RefreshCw`).
+    - Label: `Syncing (3 pending)...`.
+  - **Offline with Queued Transactions:**
+    - Badge: `flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-50 text-amber-800 border border-amber-200 text-xs font-semibold cursor-pointer hover:bg-amber-100`.
+    - Indicator: `w-2 h-2 rounded-full bg-amber-500 animate-pulse`.
+    - Label: `Offline (12 Queued)`.
+  - **Sync Error / Exponential Backoff:**
+    - Badge: `flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-rose-50 text-rose-700 border border-rose-200 text-xs font-semibold`.
+    - Indicator: `w-3.5 h-3.5 text-rose-600` (Lucide `AlertTriangle`).
+    - Label: `Sync Paused (Retrying in 5s)`.
+- **Sync Drawer / Popover:**
+  - 1-click on the sync badge opens an audit popover showing:
+    - Last successful sync timestamp ("Synced 2 mins ago").
+    - Pending queue count breakdown (`Orders: 4`, `Shifts: 1`, `Ledger: 4`).
+    - Manual `[Force Sync Now]` button (`bg-blue-600 text-white text-xs px-3 py-1.5 rounded-lg font-bold`).
+
+### 3.9. Inventory Import/Export & Bulk Stock Toolbar (Restoe Tokens)
+- **Top Header Action Buttons:**
+  - Placed alongside `[Add New Product]` in `InventoryView.tsx`:
+  - `[Export CSV]`: `px-3 py-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-lg text-xs font-bold flex items-center gap-1.5 shadow-2xs active:scale-95 transition`.
+  - `[Import CSV]`: `px-3 py-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-lg text-xs font-bold flex items-center gap-1.5 shadow-2xs active:scale-95 transition`.
+- **Table Checkbox Columns:**
+  - Header Checkbox: Selects all currently visible filtered products.
+  - Row Checkbox: Individual touch target with 40px hit area.
+  - Row Highlight: Selected rows display subtle active border & soft blue tint (`bg-blue-50/50 border-blue-200`).
+- **Floating Bulk Action Bar (Docked at Bottom of Inventory View):**
+  - Wrapper: `bg-slate-900 text-white px-5 py-3 rounded-2xl shadow-2xl flex items-center justify-between gap-4 sticky bottom-4 z-30 border border-slate-800 animate-slide-up`.
+  - Left: Selection counter badge (`bg-blue-600 text-white px-2.5 py-0.5 rounded-full text-xs font-extrabold`) + "Items Selected" + `[Clear Selection]` link.
+  - Middle: Quick stock increment pills `[+5] [ +10] [+25] [+50]` (`bg-slate-800 hover:bg-blue-600 text-white font-bold text-xs px-2.5 py-1.5 rounded-lg border border-slate-700 transition active:scale-95`).
+  - Right: `[Set Exact Stock]` button and `[Delete Selected]` button in muted red (`text-rose-400 hover:bg-rose-950/40 p-2 rounded-lg`).
+- **CSV Import Modal:**
+  - Modal container: Centered dialog `bg-white rounded-2xl border border-slate-200 shadow-2xl max-w-lg w-full p-6 space-y-4`.
+  - Dropzone: `border-2 border-dashed border-slate-300 hover:border-blue-500 rounded-xl p-8 bg-slate-50 text-center cursor-pointer transition hover:bg-blue-50/30`.
+  - Pre-flight preview pill counters: `[Total In File]`, `[New Items]`, `[Updates / Price Overrides]`.
+  - Primary Action: `Commit Import` in vibrant blue (`bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 rounded-lg shadow-sm`).
+
 ---
 
 ## 4. Skeleton Loading Patterns (Zero-Latency Perceived Performance)

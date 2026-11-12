@@ -228,6 +228,88 @@ A modern, touch-optimized, **offline-first hybrid Point of Sale (POS)** designed
   - [ ] Held orders persist in IndexedDB across browser reloads and device restarts.
   - [ ] Recalling into a non-empty cart safely allows parking the active cart first without losing any customer's items.
 
+### 3.9. Cloud Backend Infrastructure & Sync Gateway (Phase 5)
+- **Feature Title:** Centralized Cloud Backend & Resilient Bi-Directional Sync Gateway
+- **Target Personas:**
+  - **Store Owner / Executive:** Accessing real-time consolidated sales, gross margins, and branch analytics from anywhere on laptop or smartphone.
+  - **Branch Manager:** Pushing product catalog and price updates centrally from headquarters to all store registers without visiting each tablet.
+  - **Offline Cashier:** Seamlessly operating without internet all day, with automatic batch synchronization when Wi-Fi or cellular hotspot connects.
+- **User Stories:**
+  - *As a Store Owner*, I want all sales, shift audits, and inventory movements to sync to a secure cloud database (Supabase / PostgreSQL), so that I can monitor revenue and branch performance in real time.
+  - *As a Cashier*, I want the POS to silently queue sales offline and automatically push them when network connection is restored, without slowing down my register or interrupting active transactions.
+  - *As a Store Owner*, I want to change product prices or add new menu items in the cloud backend and have all cashier registers automatically download the updates.
+- **Resolved Clarifications & Technical Protocols:**
+  - **Backend Architecture (PostgreSQL):** Self-contained PostgreSQL schema with reproducible DDL migrations (`sql/postgres_schema.sql`). Direct REST Gateway (`/api/sync/push` and `/api/sync/pull`) using native browser `fetch` (zero third-party cloud SDK dependencies). Idempotent tables (`branches`, `devices`, `categories`, `products`, `orders`, `order_items`, `shifts`, `stock_ledger`).
+  - **Device / Terminal Authentication:** Headless Machine Identity via Branch API Key & Terminal Device UUID. POS terminals require zero cashier credentials to sync; cashiers log in using fast local 4-digit PINs completely offline.
+  - **Pull Synchronization Frequency:** Smart Delta Polling strategy. Automatically syncs on app boot, on network reconnect, on a background 5-minute interval timer when idle, and immediately when the cashier taps `Force Sync Now`. Conserves battery and avoids excessive mobile data consumption on Android tablets.
+- **Functional Requirements:**
+  1. **Centralized Cloud Database (PostgreSQL / Supabase Schema):**
+     - Master tables: `branches`, `profiles` (Roles: Owner, Manager, Cashier), `categories`, `products`, `orders`, `order_items`, `shifts`, `stock_ledger`, `sync_events`.
+     - Row Level Security (RLS) and branch isolation: registers are bound to specific `branch_id`.
+  2. **Bi-Directional Sync Gateway:**
+     - **Push Pipeline (Local ➔ Cloud):**
+       - Background worker monitors `sync_queue` table in Dexie IndexedDB.
+       - Flushes pending events in batches of 50 via transactional `POST /api/sync/push`.
+       - Idempotent upserts via client-generated UUIDv4/UUIDv7 primary keys to prevent duplicate entries on retry.
+       - Acknowledged IDs are cleared or marked `synced: true` locally.
+     - **Pull Pipeline (Cloud ➔ Local):**
+       - Delta polling via `GET /api/sync/pull?since={lastSyncTimestamp}`.
+       - Transmits newly created products, price revisions, and deactivated items.
+       - Atomically merges updates into local Dexie IndexedDB tables.
+  3. **Network Resilience & Connection State Engine:**
+     - Real-time online/offline detector with exponential backoff retry (2s, 5s, 15s, 30s).
+     - Non-blocking async queue: checkout and thermal printing NEVER wait for network responses.
+  4. **Cloud Analytics & Management Endpoints:**
+     - `GET /api/analytics/summary`: Daily gross revenue, net sales, VAT breakdown, total transactions, average ticket size.
+     - `GET /api/analytics/top-products`: Sales volume and gross profit margin ranking.
+     - `GET /api/inventory/low-stock`: Critical alerts across all branches.
+- **Acceptance Criteria:**
+  - [ ] Terminal successfully processes sales while 100% offline and accumulates pending transactions in `sync_queue`.
+  - [ ] When connectivity is restored, all offline sales batch-upload to cloud PostgreSQL within <5 seconds.
+  - [ ] Network interruption mid-sync does not cause duplicate orders or partial receipts (idempotency verified).
+  - [ ] Price changes committed in the cloud backend reflect on local cashier catalog upon next pull cycle.
+  - [ ] Header sync indicator accurately reflects live states: `Online (Synced)`, `Syncing (N Pending)`, or `Offline (N Queued)`.
+
+### 3.10. Inventory Import/Export & Bulk Stock Adjustment Engine
+- **Feature Title:** Product CSV Import/Export & Multi-Item Bulk Stock Engine
+- **Target Personas:**
+  - **Store Owner / Inventory Manager:** Onboards large product catalogs (hundreds of items) in minutes using spreadsheets, or backs up catalog to CSV.
+  - **Warehouse / Receiving Clerk:** Receives batch shipments and applies stock additions across multiple products simultaneously.
+  - **Store Auditor:** Reconciles physical counts against digital ledger via batch overrides.
+- **User Stories:**
+  - *As an Inventory Manager*, I want to export my entire product catalog to CSV so that I can review stock values in Excel or Google Sheets.
+  - *As an Inventory Manager*, I want to import products from a CSV file with automatic upsert (match by barcode or SKU) and a pre-import validation modal showing row previews.
+  - *As a Receiving Clerk*, I want to select multiple products in the inventory table and apply bulk restock additions (`+5`, `+10`, `+25`, `+50`) with a single click.
+- **Resolved Clarifications & Business Protocols:**
+  - **Smart Upsert Reconciliation:** Matches CSV rows against existing products first by `barcode`, then by `sku`. Matching items update price, cost, stock, and category. Non-matching rows generate a new client UUIDv4 and are inserted as new products.
+  - **Stock Movement Ledger Tracking:** Bulk stock adjustments write an atomic batch into `stock_ledger` with reason `RESTOCK` or `ADJUSTMENT` and queue corresponding `syncQueue` events so cloud PostgreSQL stays 100% in sync.
+  - **Pricing Format:** All CSV import/export prices use standard decimal format (e.g. `₱150.00` or `150.00`), automatically parsed into standard numeric values without scientific notation errors.
+- **Functional Requirements:**
+  1. **CSV Export Engine:**
+     - Generates clean RFC 4180 CSV with UTF-8 BOM encoding for seamless Microsoft Excel and spreadsheet compatibility.
+     - Columns: `id`, `name`, `barcode`, `sku`, `category`, `price`, `cost`, `stock`, `image`.
+     - Automatic timestamped filename: `POS-Inventory-YYYYMMDD.csv`.
+  2. **CSV Import Modal & Parser:**
+     - Drag-and-drop dropzone or file selector supporting `.csv`.
+     - Client-side parser with field mapping tolerance (supports common aliases like `Product Name`, `Item`, `Barcode`, `UPC`, `Price`, `Cost`, `Quantity`).
+     - Pre-flight preview card: Displays count of new items to create vs existing items to update.
+     - 1-click Download Sample CSV Template button with pre-filled example items.
+     - Atomic batch upsert into Dexie IndexedDB with immediate UI refresh and toast notification.
+  3. **Bulk Stock Adjustment Toolbar:**
+     - Checkbox selection on inventory table (with "Select All" toggle).
+     - Floating or header bulk action bar when $\ge 1$ item is selected:
+       - Shows `N items selected` with 1-click Clear Selection.
+       - Quick increment buttons: `+5`, `+10`, `+25`, `+50`, `+100`.
+       - Custom quantity input with options to Add (`+`) or Set Exact (`=`).
+       - Bulk Delete with protective confirmation prompt.
+- **Acceptance Criteria:**
+  - [ ] Clicking "Export CSV" immediately downloads a complete, valid CSV file containing all products.
+  - [ ] Barcodes with leading zeros or long numeric digits export as text to prevent Excel auto-formatting corruption.
+  - [ ] Dragging and dropping a CSV file parses valid rows and presents a pre-import preview modal.
+  - [ ] Items with matching barcodes or SKUs update existing product data (upsert) without creating duplicate catalog records.
+  - [ ] Checking multiple products and clicking `+10` increments stock on all selected items in a single atomic transaction.
+  - [ ] "Select All" correctly selects only currently filtered products when search or category filters are active.
+
 ---
 
 ## 4. Non-Functional Requirements

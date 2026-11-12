@@ -19,31 +19,23 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
 
   return (
     <aside className="w-[84px] min-w-[84px] bg-white border-r border-slate-200 flex flex-col items-center py-6 shrink-0 justify-between select-none z-20">
-      {/* Brand Logo (Restoe Geometric Rosette Blossom) */}
+      {/* Brand Logo (POS Terminal & Fast Cart) */}
       <div className="flex flex-col items-center gap-6 w-full">
         <div className="relative group flex items-center justify-center">
-          <div className="w-12 h-12 rounded-2xl bg-blue-600 text-white flex items-center justify-center shadow-md shadow-blue-500/25 shrink-0 transition-transform active:scale-95 cursor-pointer">
-            <svg
-              className="w-6 h-6 text-white"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.4"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              {/* Restoe 4-Petal Geometric Flower Logo */}
-              <circle cx="12" cy="7" r="3" />
-              <circle cx="12" cy="17" r="3" />
-              <circle cx="7" cy="12" r="3" />
-              <circle cx="17" cy="12" r="3" />
-              <circle cx="12" cy="12" r="1.5" fill="currentColor" />
-            </svg>
+          <div
+            onClick={() => setActiveTab('pos')}
+            className="w-12 h-12 rounded-2xl bg-white border border-slate-200/90 p-1 flex items-center justify-center shadow-md shadow-blue-500/10 shrink-0 transition-all hover:border-blue-400 hover:shadow-blue-500/20 active:scale-95 cursor-pointer overflow-hidden"
+          >
+            <img
+              src="/logo.png"
+              alt="Universal POS Logo"
+              className="w-full h-full object-contain"
+            />
           </div>
 
           {/* Logo Tooltip */}
           <div className="absolute left-[calc(100%+14px)] px-3 py-1.5 bg-slate-900 text-white text-xs font-bold rounded-lg shadow-xl whitespace-nowrap opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-all duration-200 ease-out transform -translate-x-1 group-hover:translate-x-0 z-50 flex items-center">
-            Restoe POS
+            Universal POS
             <div className="absolute -left-1 top-1/2 -translate-y-1/2 w-2 h-2 bg-slate-900 rotate-45" />
           </div>
         </div>

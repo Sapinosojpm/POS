@@ -104,3 +104,13 @@ export interface SyncEvent {
   createdAt: number;
   synced: boolean;
 }
+
+export interface StockMovement {
+  id: string; // UUIDv4
+  productId: string;
+  delta: number;
+  reason: 'RESTOCK' | 'ADJUSTMENT' | 'SALE' | 'INITIAL' | 'VOID';
+  orderId?: string;
+  notes?: string;
+  createdAt: number;
+}

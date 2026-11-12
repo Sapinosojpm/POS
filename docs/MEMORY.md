@@ -39,6 +39,25 @@
   - **Persistence:** Stored in Dexie IndexedDB `held_orders` table to survive browser refreshes and tablet reboots.
   - **Implementation Verification:** Created `HoldCartModal`, `HeldOrdersModal`, live query badge in `Header` and `CartView`, verified with `npm run build` and synced to Android via `npx cap sync`.
 
+- **Backend & Sync Gateway Architecture (Phase 5 - PostgreSQL):**
+  - **User Mandate:** "this is offline dont use supabase, use postgres". Zero external cloud SDKs or proprietary vendor lock-in.
+  - **Database:** Pure PostgreSQL schema (`sql/postgres_schema.sql`) with idempotent UUID tables (`branches`, `devices`, `categories`, `products`, `orders`, `order_items`, `shifts`, `stock_ledger`).
+  - **Client Protocol:** Pure native `fetch`-based REST client (`src/core/sync/syncClient.ts`) communicating with `/api/sync/push` and `/api/sync/pull`.
+  - **Machine Authentication:** POS terminals authenticate using a persistent Device Token and Branch ID. Cashiers remain 100% offline using local 4-digit PINs; register operations are never blocked by network outages.
+  - **Pull Synchronization:** Smart Delta Polling strategy (on startup, on reconnect, 5-minute background intervals, and manual 'Force Sync' trigger) to conserve tablet battery and cellular bandwidth.
+  - **Outbox Push Engine:** Dexie `sync_queue` background worker flushing batches of 50 events using client-generated UUIDv4 idempotency keys.
+
+- **POS Brand Logo Emblem:**
+  - Integrated custom POS logo emblem (dynamic shopping cart with modern blue wireless POS terminal, printed receipt, and orange speed streak).
+  - Deployed to `public/logo.png`, `public/favicon.png`, and `src/assets/logo.png`.
+  - Displayed in the Left Navigation Sidebar (`Sidebar.tsx`) with 12x12 rounded container, browser favicon (`index.html`), and Store Identity card in `SettingsView.tsx`.
+  - Verified and bundled in Capacitor Android web assets.
+
+- **Inventory Import/Export & Bulk Stock Operations (Phase 4.9):**
+  - **Reconciliation:** Smart Upsert matching on `barcode` first, then `sku`. Matching items update prices and stock; non-matching rows generate new UUIDv4 products.
+  - **Stock Movement Ledger:** Bulk restock increments write atomic entries to `stock_ledger` with reason `RESTOCK` and append events to `syncQueue` for PostgreSQL sync.
+  - **Pricing & Encoding:** Decimal currency format with UTF-8 BOM encoding to ensure flawless opening in Microsoft Excel and Google Sheets without barcode distortion.
+
 ## Target Personas
 1. **Micro / Solo User:** Standalone Android tablet running the **`.apk`** with no continuous internet. Daily operations and Z-reports are 100% self-contained on the device.
 2. **Medium Business:** Multiple terminals (desktops + tablets) syncing through a centralized cloud backend with role-based cashier PINs and branch management.
