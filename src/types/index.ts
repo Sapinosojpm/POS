@@ -25,7 +25,7 @@ export interface CartItem {
   notes?: string;
 }
 
-export type PaymentMethod = 'CASH' | 'GCASH' | 'MAYA' | 'CARD';
+export type PaymentMethod = 'CASH' | 'GCASH' | 'MAYA' | 'CARD' | 'PAYLATER';
 
 export interface OrderItem {
   id: string;

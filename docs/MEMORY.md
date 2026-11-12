@@ -58,6 +58,16 @@
   - **Stock Movement Ledger:** Bulk restock increments write atomic entries to `stock_ledger` with reason `RESTOCK` and append events to `syncQueue` for PostgreSQL sync.
   - **Pricing & Encoding:** Decimal currency format with UTF-8 BOM encoding to ensure flawless opening in Microsoft Excel and Google Sheets without barcode distortion.
 
+- **VAT Toggle & Custom Payment Methods (Phase 4.10):**
+  - **VAT Control:** Settings toggle `enableTax: boolean`. When OFF (Non-VAT), hides "Tax (12% VAT Incl)" row in CartView, sets tax to 0.00, applies direct 20% Senior/PWD discount without VAT extraction, and formats thermal receipt as "ACKNOWLEDGEMENT RECEIPT / NON-VAT".
+  - **Payment Methods:** Configurable payment options `{ cash: boolean, card: boolean, gcash: boolean, maya: boolean, paylater: boolean }`. Defaults to Cash, GCash, Maya enabled; Card and Paylater disabled by default. Invoice pills and Checkout modal dynamically render only active methods.
+
+- **Order History Multi-Criteria Sorting Engine (Phase 4.11):**
+  - **Default Sort:** Date: Newest First (`createdAt` descending) so new sales are immediately visible.
+  - **Context-Aware Direction Taps:** Numerical/temporal fields (`Date & Time`, `Total Amount`) trigger `desc` on first click; nominal text fields (`Order #`, `Cashier Name`) trigger `asc` on first click. Subsequent clicks toggle direction.
+  - **Dual Controls:** Synchronized Quick Sort dropdown in the toolbar (tablet-friendly) and clickable `<th>` table headers with active visual indicators (`ArrowUpDown`, `ArrowUp`, `ArrowDown`, `text-blue-600`).
+  - **Performance:** Client-side memoized sorting executed in <5ms without re-querying IndexedDB or resetting active filters.
+
 ## Target Personas
 1. **Micro / Solo User:** Standalone Android tablet running the **`.apk`** with no continuous internet. Daily operations and Z-reports are 100% self-contained on the device.
 2. **Medium Business:** Multiple terminals (desktops + tablets) syncing through a centralized cloud backend with role-based cashier PINs and branch management.

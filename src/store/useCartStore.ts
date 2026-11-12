@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import type { Product, CartItem, PaymentMethod, CartDiscount } from '../types';
+import { useSettingsStore } from './useSettingsStore';
 
 export interface DiscountBreakdown {
   grossSubtotal: number;
@@ -104,10 +105,18 @@ export const useCartStore = create<CartState>((set, get) => ({
   getDiscountBreakdown: (): DiscountBreakdown => {
     const grossSubtotal = get().getSubtotal();
     const discount = get().discount;
+    const settings = useSettingsStore.getState()?.settings;
+    const isTaxEnabled = settings?.enableTax ?? true;
+    const taxRate = (settings?.taxRate ?? 12) / 100;
+    const vatDivisor = 1 + taxRate;
 
     if (!discount || discount.type === 'NONE' || grossSubtotal <= 0) {
-      const netOfVat = Math.round((grossSubtotal / 1.12) * 100) / 100;
-      const tax = Math.round((grossSubtotal - netOfVat) * 100) / 100;
+      const netOfVat = isTaxEnabled
+        ? Math.round((grossSubtotal / vatDivisor) * 100) / 100
+        : grossSubtotal;
+      const tax = isTaxEnabled
+        ? Math.round((grossSubtotal - netOfVat) * 100) / 100
+        : 0;
       return {
         grossSubtotal,
         vatExemptAmount: 0,
@@ -127,14 +136,33 @@ export const useCartStore = create<CartState>((set, get) => ({
       const seniorGross = grossSubtotal * ratio;
       const regularGross = grossSubtotal - seniorGross;
 
-      // Senior portion: strip 12% VAT, then take 20% discount
-      const seniorNetOfVat = Math.round((seniorGross / 1.12) * 100) / 100;
+      if (!isTaxEnabled) {
+        // Non-VAT calculation: Direct 20% discount on senior portion, 0 VAT
+        const seniorDiscountVal = Math.round(seniorGross * 0.2 * 100) / 100;
+        const finalTotal = Math.max(0, Math.round((grossSubtotal - seniorDiscountVal) * 100) / 100);
+
+        const typeLabel = discount.type === 'SENIOR' ? 'Senior Citizen (20%)' : 'PWD (20%)';
+        const label = totalGuests > 1 ? `${typeLabel} [${seniorCount}/${totalGuests} Pax]` : typeLabel;
+
+        return {
+          grossSubtotal,
+          vatExemptAmount: 0,
+          discountAmount: seniorDiscountVal,
+          netOfVat: grossSubtotal,
+          tax: 0,
+          finalTotal,
+          discountLabel: label,
+        };
+      }
+
+      // Senior portion: strip VAT, then take 20% discount
+      const seniorNetOfVat = Math.round((seniorGross / vatDivisor) * 100) / 100;
       const vatExempt = Math.round((seniorGross - seniorNetOfVat) * 100) / 100;
       const seniorDiscountVal = Math.round(seniorNetOfVat * 0.2 * 100) / 100;
       const seniorDue = Math.round((seniorNetOfVat - seniorDiscountVal) * 100) / 100;
 
       // Regular portion (if mixed guests in group)
-      const regularNetOfVat = Math.round((regularGross / 1.12) * 100) / 100;
+      const regularNetOfVat = Math.round((regularGross / vatDivisor) * 100) / 100;
       const regularTax = Math.round((regularGross - regularNetOfVat) * 100) / 100;
       const regularDue = regularGross;
 
@@ -158,8 +186,8 @@ export const useCartStore = create<CartState>((set, get) => ({
       const pct = Math.min(100, Math.max(0, discount.value));
       const discountVal = Math.round(((grossSubtotal * pct) / 100) * 100) / 100;
       const finalTotal = Math.max(0, Math.round((grossSubtotal - discountVal) * 100) / 100);
-      const netOfVat = Math.round((finalTotal / 1.12) * 100) / 100;
-      const tax = Math.round((finalTotal - netOfVat) * 100) / 100;
+      const netOfVat = isTaxEnabled ? Math.round((finalTotal / vatDivisor) * 100) / 100 : finalTotal;
+      const tax = isTaxEnabled ? Math.round((finalTotal - netOfVat) * 100) / 100 : 0;
 
       return {
         grossSubtotal,
@@ -175,8 +203,8 @@ export const useCartStore = create<CartState>((set, get) => ({
     if (discount.type === 'FIXED') {
       const discountVal = Math.min(discount.value, grossSubtotal);
       const finalTotal = Math.max(0, Math.round((grossSubtotal - discountVal) * 100) / 100);
-      const netOfVat = Math.round((finalTotal / 1.12) * 100) / 100;
-      const tax = Math.round((finalTotal - netOfVat) * 100) / 100;
+      const netOfVat = isTaxEnabled ? Math.round((finalTotal / vatDivisor) * 100) / 100 : finalTotal;
+      const tax = isTaxEnabled ? Math.round((finalTotal - netOfVat) * 100) / 100 : 0;
 
       return {
         grossSubtotal,

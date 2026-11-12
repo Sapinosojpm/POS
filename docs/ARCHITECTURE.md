@@ -76,6 +76,13 @@ flowchart TB
   - **Push:** Transactional upsert of batches of 50 outbox records via `POST /api/sync/push`.
   - **Pull:** Smart Delta Polling via `GET /api/sync/pull?since=:timestamp` on app startup, network reconnection, 5-minute background intervals, or manual trigger.
 
+### 2.4. Order History Multi-Field Sorting Architecture
+- **In-Memory Comparator Pipeline:**
+  - Client-side memoized sorting running against filtered subsets of IndexedDB orders.
+  - Sort fields: `createdAt` (numeric timestamp), `total` (numeric amount), `orderNumber` (alphanumeric collation), and `cashierName` (case-insensitive string comparison).
+  - Context-aware initial direction logic: numerical/temporal dimensions (`createdAt`, `total`) default to `desc` on first click; nominal/identity dimensions (`orderNumber`, `cashierName`) default to `asc`.
+  - Dual control binding: Synchronized state between Quick Sort Toolbar Dropdown and Interactive Table Column Headers (`<th>`). Zero redundant IndexedDB fetches.
+
 ---
 
 ## 3. Data Sync & Conflict Resolution Architecture

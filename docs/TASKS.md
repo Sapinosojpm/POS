@@ -83,6 +83,22 @@
 - [x] Implement atomic bulk stock adjustment transaction writing to `db.products`, `db.stockLedger`, and `db.syncQueue`.
 - [x] Verify build with `npm run build` and sync assets to Android via `npx cap sync`.
 
+## Phase 4.10: Configurable VAT Toggle & Payment Method Visibility
+- [x] Add `enableTax: boolean` and `enabledPaymentMethods: { cash: boolean, card: boolean, gcash: boolean, maya: boolean, paylater: boolean }` to `StoreSettings` in `src/store/useSettingsStore.ts`.
+- [x] Add "Enable Sales Tax / VAT" toggle switch in `SettingsView.tsx` under Currency & Tax.
+- [x] Add dedicated "Payment Methods" section in `SettingsView.tsx` with toggle switches for Cash, E-Wallet (GCash), Maya, Credit/Debit Card, and Paylater.
+- [x] Update `CartView.tsx` to conditionally hide the "Tax (12% VAT Incl)" row when `enableTax` is false, and dynamically render only enabled payment option pills.
+- [x] Update `CheckoutModal.tsx` to filter payment options to enabled methods only.
+- [x] Update discount calculation in `useCartStore.ts` to respect `enableTax` (skip VAT extraction when store is Non-VAT).
+- [x] Verify build (`npm run build`) and sync to Android (`npx cap sync`).
+
+## Phase 4.11: Order History Sorting Engine
+- [x] Define `SortField` (`'createdAt' | 'total' | 'orderNumber' | 'cashierName'`) and `SortDirection` (`'asc' | 'desc'`).
+- [x] Add Quick Sort dropdown selector to `OrderHistoryView.tsx` toolbar (`Date: Newest First`, `Date: Oldest First`, `Amount: High to Low`, `Amount: Low to High`, `Order #: Asc/Desc`).
+- [x] Make table column headers clickable (`Order Details / #`, `Date & Time`, `Total Amount`, `Cashier`) with `ArrowUpDown`, `ArrowUp`, and `ArrowDown` indicator icons.
+- [x] Implement client-side memoized sort comparator seamlessly preserving search terms and payment filters.
+- [x] Verify build with `npm run build` and sync assets to Android via `npx cap sync`.
+
 ## Phase 5: PostgreSQL Backend Infrastructure & Sync Gateway
 - [x] Create PostgreSQL schema `sql/postgres_schema.sql` defining relational tables (`branches`, `devices`, `categories`, `products`, `orders`, `order_items`, `shifts`, `stock_ledger`) with UUID keys, indexes, and updated_at triggers.
 - [x] Implement standalone Node.js sync server (`server/index.mjs`) implementing `POST /api/sync/push` (batch idempotent PostgreSQL upserts) and `GET /api/sync/pull` (delta changes since timestamp).

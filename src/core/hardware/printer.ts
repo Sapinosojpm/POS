@@ -47,14 +47,19 @@ export class ThermalPrinterService {
       return ' '.repeat(pad) + str;
     };
 
+    const isTaxEnabled = (settings as any).enableTax !== false;
+    const receiptTitle = isTaxEnabled
+      ? (settings.receiptHeader || 'OFFICIAL RECEIPT')
+      : 'ACKNOWLEDGEMENT RECEIPT / NON-VAT';
+
     let text = `
 ${center(settings.storeName.toUpperCase())}
 ${center(settings.branchName)}
 ${center(settings.storeAddress)}
-${center(`TIN: ${settings.tin}`)}
+${center(`TIN: ${settings.tin}${!isTaxEnabled ? ' (NON-VAT)' : ''}`)}
 ${center(`Tel: ${settings.storePhone}`)}
 ${divider}
-${center(settings.receiptHeader || 'OFFICIAL RECEIPT')}
+${center(receiptTitle)}
 Date: ${dateStr}
 Order No: ${order.orderNumber}
 Cashier:  ${order.cashierName}
@@ -89,8 +94,11 @@ GROSS SUBTOTAL:             ${cur}${order.subtotal.toFixed(2)}
       text += `${discTag.padEnd(28, ' ')}-${cur}${order.discount.toFixed(2)}\n`;
     }
 
-    text += `TAX/VAT (${settings.taxRate}%):             ${cur}${order.tax.toFixed(2)}
-${doubleDivider}
+    if (isTaxEnabled) {
+      text += `TAX/VAT (${settings.taxRate}%):             ${cur}${order.tax.toFixed(2)}\n`;
+    }
+
+    text += `${doubleDivider}
 TOTAL AMOUNT DUE:           ${cur}${order.total.toFixed(2)}
 ${doubleDivider}
 TENDERED (${order.paymentMethod}):          ${cur}${order.amountTendered.toFixed(2)}

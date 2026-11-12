@@ -16,8 +16,13 @@ import {
   EyeOff,
   Scan,
   Volume2,
+  CreditCard,
+  Wallet,
+  Banknote,
+  Smartphone,
+  Clock,
 } from 'lucide-react';
-import { useSettingsStore, type StoreSettings } from '../store/useSettingsStore';
+import { useSettingsStore, type StoreSettings, type EnabledPaymentMethods } from '../store/useSettingsStore';
 import { printerService } from '../core/hardware/printer';
 import { playScanSuccessSound, playScanErrorSound, triggerHaptic } from '../core/hardware/scannerFeedback';
 import { BarcodeScannerModal } from './BarcodeScannerModal';
@@ -28,7 +33,7 @@ import { toast } from '../store/useToastStore';
 export const SettingsView: React.FC = () => {
   const { settings, updateSettings, resetSettings } = useSettingsStore();
   const [formData, setFormData] = useState<StoreSettings>({ ...settings });
-  const [activeSection, setActiveSection] = useState<'store' | 'printer' | 'finance' | 'data' | 'scanner'>('store');
+  const [activeSection, setActiveSection] = useState<'store' | 'printer' | 'finance' | 'data' | 'scanner' | 'payments'>('store');
   const [pinInput, setPinInput] = useState('');
   const [isPinModalOpen, setIsPinModalOpen] = useState(false);
   const [pinAction, setPinAction] = useState<'reset' | 'changePin' | null>(null);
@@ -42,6 +47,23 @@ export const SettingsView: React.FC = () => {
   const handleChange = (field: keyof StoreSettings, value: any) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
     setIsSaved(false);
+  };
+
+  const handleTogglePaymentMethod = (method: keyof EnabledPaymentMethods) => {
+    const current = formData.enabledPaymentMethods || {
+      cash: true,
+      gcash: true,
+      maya: true,
+      card: false,
+      paylater: false,
+    };
+    const updated = { ...current, [method]: !current[method] };
+    const hasAtLeastOne = Object.values(updated).some((v) => v);
+    if (!hasAtLeastOne) {
+      toast.error('Action Restricted', 'At least one payment method must remain active.');
+      return;
+    }
+    handleChange('enabledPaymentMethods', updated);
   };
 
   const handleSave = () => {
@@ -311,12 +333,13 @@ export const SettingsView: React.FC = () => {
         {/* Left Settings Panel (Tabs + Form Fields) */}
         <div className="xl:col-span-7 flex flex-col gap-4">
           {/* Navigation Tab Bar */}
-          <div className="flex items-center gap-1.5 p-1 bg-white border border-slate-200 rounded-xl shrink-0">
+          <div className="flex items-center gap-1.5 p-1 bg-white border border-slate-200 rounded-xl shrink-0 overflow-x-auto scrollbar-none">
             {[
               { id: 'store', label: 'Store Identity', icon: Store },
+              { id: 'payments', label: 'Payment Methods', icon: CreditCard },
+              { id: 'finance', label: 'Tax & Currency', icon: DollarSign },
               { id: 'printer', label: 'Thermal Printer', icon: Printer },
               { id: 'scanner', label: 'Barcode Scanner', icon: Scan },
-              { id: 'finance', label: 'Currency & Tax', icon: DollarSign },
               { id: 'data', label: 'Backup & Security', icon: ShieldCheck },
             ].map(({ id, label, icon: Icon }) => {
               const isActive = activeSection === id;
@@ -688,7 +711,161 @@ export const SettingsView: React.FC = () => {
               </div>
             )}
 
-            {/* SECTION 3: CURRENCY & TAX */}
+            {/* SECTION: PAYMENT METHODS */}
+            {activeSection === 'payments' && (
+              <div className="space-y-4 animate-in fade-in duration-200">
+                <div className="border-b border-slate-100 pb-3">
+                  <h3 className="font-bold text-sm text-slate-900">Accepted Payment Methods</h3>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    Toggle which payment buttons are displayed on your cashier Invoice panel and Checkout modal.
+                  </p>
+                </div>
+
+                <div className="space-y-3">
+                  {/* Cash */}
+                  <div className="p-3.5 rounded-xl border border-slate-200 bg-slate-50 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold">
+                        <Banknote className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <h4 className="font-bold text-xs text-slate-800">Cash Payment</h4>
+                        <p className="text-[11px] text-slate-500">
+                          Standard physical cash with quick bills numpad and exact change calculator.
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleTogglePaymentMethod('cash')}
+                      className={`w-11 h-6 rounded-full transition-colors relative cursor-pointer ${
+                        formData.enabledPaymentMethods?.cash !== false ? 'bg-blue-600' : 'bg-slate-300'
+                      }`}
+                    >
+                      <div
+                        className={`w-5 h-5 rounded-full bg-white shadow-xs absolute top-0.5 transition-transform ${
+                          formData.enabledPaymentMethods?.cash !== false ? 'translate-x-5.5' : 'translate-x-0.5'
+                        }`}
+                      />
+                    </button>
+                  </div>
+
+                  {/* GCash */}
+                  <div className="p-3.5 rounded-xl border border-slate-200 bg-slate-50 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center font-bold">
+                        <Smartphone className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <h4 className="font-bold text-xs text-slate-800">GCash / E-Wallet</h4>
+                        <p className="text-[11px] text-slate-500">
+                          Direct GCash QR code scan or mobile wallet reference payment.
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleTogglePaymentMethod('gcash')}
+                      className={`w-11 h-6 rounded-full transition-colors relative cursor-pointer ${
+                        formData.enabledPaymentMethods?.gcash ? 'bg-blue-600' : 'bg-slate-300'
+                      }`}
+                    >
+                      <div
+                        className={`w-5 h-5 rounded-full bg-white shadow-xs absolute top-0.5 transition-transform ${
+                          formData.enabledPaymentMethods?.gcash ? 'translate-x-5.5' : 'translate-x-0.5'
+                        }`}
+                      />
+                    </button>
+                  </div>
+
+                  {/* Maya */}
+                  <div className="p-3.5 rounded-xl border border-slate-200 bg-slate-50 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold">
+                        <Wallet className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <h4 className="font-bold text-xs text-slate-800">Maya / Digital Wallet</h4>
+                        <p className="text-[11px] text-slate-500">
+                          Maya QR, digital bank transfer, or QR Ph mobile transactions.
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleTogglePaymentMethod('maya')}
+                      className={`w-11 h-6 rounded-full transition-colors relative cursor-pointer ${
+                        formData.enabledPaymentMethods?.maya ? 'bg-blue-600' : 'bg-slate-300'
+                      }`}
+                    >
+                      <div
+                        className={`w-5 h-5 rounded-full bg-white shadow-xs absolute top-0.5 transition-transform ${
+                          formData.enabledPaymentMethods?.maya ? 'translate-x-5.5' : 'translate-x-0.5'
+                        }`}
+                      />
+                    </button>
+                  </div>
+
+                  {/* Credit Card */}
+                  <div className="p-3.5 rounded-xl border border-slate-200 bg-slate-50 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold">
+                        <CreditCard className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <h4 className="font-bold text-xs text-slate-800">Credit / Debit Card</h4>
+                        <p className="text-[11px] text-slate-500">
+                          External card swipe / dip payment terminal (Visa, Mastercard, BancNet).
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleTogglePaymentMethod('card')}
+                      className={`w-11 h-6 rounded-full transition-colors relative cursor-pointer ${
+                        formData.enabledPaymentMethods?.card ? 'bg-blue-600' : 'bg-slate-300'
+                      }`}
+                    >
+                      <div
+                        className={`w-5 h-5 rounded-full bg-white shadow-xs absolute top-0.5 transition-transform ${
+                          formData.enabledPaymentMethods?.card ? 'translate-x-5.5' : 'translate-x-0.5'
+                        }`}
+                      />
+                    </button>
+                  </div>
+
+                  {/* Paylater */}
+                  <div className="p-3.5 rounded-xl border border-slate-200 bg-slate-50 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center font-bold">
+                        <Clock className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <h4 className="font-bold text-xs text-slate-800">Paylater / Store Credit</h4>
+                        <p className="text-[11px] text-slate-500">
+                          Suki customer tab / credit ("Palista") or deferred billing.
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleTogglePaymentMethod('paylater')}
+                      className={`w-11 h-6 rounded-full transition-colors relative cursor-pointer ${
+                        formData.enabledPaymentMethods?.paylater ? 'bg-blue-600' : 'bg-slate-300'
+                      }`}
+                    >
+                      <div
+                        className={`w-5 h-5 rounded-full bg-white shadow-xs absolute top-0.5 transition-transform ${
+                          formData.enabledPaymentMethods?.paylater ? 'translate-x-5.5' : 'translate-x-0.5'
+                        }`}
+                      />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* SECTION: CURRENCY & TAX */}
             {activeSection === 'finance' && (
               <div className="space-y-4 animate-in fade-in duration-200">
                 <div className="border-b border-slate-100 pb-3">
@@ -696,6 +873,43 @@ export const SettingsView: React.FC = () => {
                   <p className="text-xs text-slate-400 mt-0.5">
                     Configure the active currency symbol and local value-added tax rates.
                   </p>
+                </div>
+
+                {/* VAT On/Off Toggle Card */}
+                <div className="p-4 rounded-xl border border-slate-200 bg-slate-50 flex items-center justify-between">
+                  <div>
+                    <h4 className="font-bold text-xs text-slate-900 flex items-center gap-2">
+                      <span>Enable Value-Added Tax (VAT) / Sales Tax</span>
+                      {formData.enableTax ? (
+                        <span className="px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 text-[10px] font-extrabold">
+                          VAT REGISTERED
+                        </span>
+                      ) : (
+                        <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 text-[10px] font-extrabold">
+                          NON-VAT STORE
+                        </span>
+                      )}
+                    </h4>
+                    <p className="text-[11px] text-slate-500 mt-0.5">
+                      {formData.enableTax
+                        ? '12% VAT is included in prices and displayed on cashier invoice and receipt.'
+                        : 'Non-VAT mode: Hides "Tax (12% VAT Incl)" from the invoice panel and prints clean Non-VAT receipts.'}
+                    </p>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => handleChange('enableTax', !formData.enableTax)}
+                    className={`w-11 h-6 rounded-full transition-colors relative cursor-pointer shrink-0 ${
+                      formData.enableTax ? 'bg-blue-600' : 'bg-slate-300'
+                    }`}
+                  >
+                    <div
+                      className={`w-5 h-5 rounded-full bg-white shadow-xs absolute top-0.5 transition-transform ${
+                        formData.enableTax ? 'translate-x-5.5' : 'translate-x-0.5'
+                      }`}
+                    />
+                  </button>
                 </div>
 
                 {/* Currency Selector */}
@@ -738,57 +952,59 @@ export const SettingsView: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Tax Rate Setting */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-2">
-                  <div>
-                    <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">
-                      VAT / Tax Rate (%)
-                    </label>
-                    <input
-                      type="number"
-                      min="0"
-                      max="100"
-                      step="0.1"
-                      value={formData.taxRate}
-                      onChange={(e) => handleChange('taxRate', parseFloat(e.target.value) || 0)}
-                      placeholder="12"
-                      className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3.5 py-2 text-xs text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white"
-                    />
-                    <span className="text-[10px] text-slate-400 mt-1 block">
-                      Standard Philippine VAT is 12%. Enter 0 for non-VAT sole proprietors.
-                    </span>
-                  </div>
+                {/* Tax Rate Setting (Only if VAT is enabled) */}
+                {formData.enableTax && (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-2">
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+                        VAT / Tax Rate (%)
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        max="100"
+                        step="0.1"
+                        value={formData.taxRate}
+                        onChange={(e) => handleChange('taxRate', parseFloat(e.target.value) || 0)}
+                        placeholder="12"
+                        className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3.5 py-2 text-xs text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white"
+                      />
+                      <span className="text-[10px] text-slate-400 mt-1 block">
+                        Standard Philippine VAT is 12%. Enter 0 for non-VAT sole proprietors.
+                      </span>
+                    </div>
 
-                  <div>
-                    <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">
-                      Tax Computation Mode
-                    </label>
-                    <div className="flex items-center gap-2 mt-1">
-                      <button
-                        type="button"
-                        onClick={() => handleChange('isTaxInclusive', true)}
-                        className={`flex-1 py-2 px-2.5 rounded-lg text-xs font-bold border transition ${
-                          formData.isTaxInclusive
-                            ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
-                            : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
-                        }`}
-                      >
-                        VAT Inclusive
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleChange('isTaxInclusive', false)}
-                        className={`flex-1 py-2 px-2.5 rounded-lg text-xs font-bold border transition ${
-                          !formData.isTaxInclusive
-                            ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
-                            : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
-                        }`}
-                      >
-                        VAT Exclusive
-                      </button>
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+                        Tax Computation Mode
+                      </label>
+                      <div className="flex items-center gap-2 mt-1">
+                        <button
+                          type="button"
+                          onClick={() => handleChange('isTaxInclusive', true)}
+                          className={`flex-1 py-2 px-2.5 rounded-lg text-xs font-bold border transition ${
+                            formData.isTaxInclusive
+                              ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
+                              : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+                          }`}
+                        >
+                          VAT Inclusive
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleChange('isTaxInclusive', false)}
+                          className={`flex-1 py-2 px-2.5 rounded-lg text-xs font-bold border transition ${
+                            !formData.isTaxInclusive
+                              ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
+                              : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+                          }`}
+                        >
+                          VAT Exclusive
+                        </button>
+                      </div>
                     </div>
                   </div>
-                </div>
+                )}
               </div>
             )}
 

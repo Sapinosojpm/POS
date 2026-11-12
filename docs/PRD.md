@@ -310,6 +310,77 @@ A modern, touch-optimized, **offline-first hybrid Point of Sale (POS)** designed
   - [ ] Checking multiple products and clicking `+10` increments stock on all selected items in a single atomic transaction.
   - [ ] "Select All" correctly selects only currently filtered products when search or category filters are active.
 
+### 3.11. Configurable VAT Toggle & Customizable Payment Methods (Settings)
+- **Feature Title:** Dynamic VAT / Tax Toggle & Accepted Payment Method Visibility Controls
+- **Target Personas:**
+  - **Non-VAT Store Owner / Micro Retailer:** Operating below the BIR VAT registration threshold (₱3M) who does not charge 12% VAT and wants a clean invoice without confusing tax lines.
+  - **Cash & GCash Only Merchant:** Does not accept credit cards or paylater and wants to hide unused payment buttons to prevent cashier misclicks.
+- **User Stories:**
+  - *As a Store Owner*, I want to toggle OFF VAT in Settings so that my cashier invoice panel and receipts do not display "Tax (12% VAT Incl)".
+  - *As a Cashier*, I want the payment buttons in the Invoice panel and Checkout modal to display ONLY the payment options our store supports (e.g. Cash and GCash only).
+- **Resolved Clarifications & Business Protocols:**
+  - **Non-VAT Senior/PWD Computation:** When VAT is turned OFF, the statutory formula bypasses 12% VAT removal and directly computes a clean **20% discount on the gross eligible total** (`Discount = Total * 0.20`), eliminating negative or phantom tax line items.
+  - **Default Payment Presets:** New installations default to **Cash, GCash (E-Wallet), and Maya** enabled. Credit Card and Paylater are disabled by default until toggled ON in Settings.
+  - **Thermal Receipt Non-VAT Compliance:** When VAT is OFF, the printed receipt header changes to **"ACKNOWLEDGEMENT RECEIPT / NON-VAT"** and suppresses the VATable/VAT-Exempt sales table.
+- **Functional Requirements:**
+  1. **VAT / Tax Enable Switch in Settings:**
+     - Toggle: `Enable Tax / VAT Calculation` (ON / OFF).
+     - When OFF (Non-VAT Store):
+       - "Tax (12% VAT Incl)" row is completely hidden from `CartView.tsx` and Checkout summary.
+       - Tax is set to `0.00`.
+       - Thermal receipts omit the VAT breakdown and show pure Gross/Net total.
+     - When ON (VAT-Registered Store):
+       - Displays tax rate input (default `12%`), Tax-Inclusive switch, and live VAT deduction pills.
+  2. **Payment Method Visibility Controls in Settings:**
+     - Checkbox / Toggle group in `SettingsView.tsx`:
+       - `Cash` (Default ON, primary fallback)
+       - `GCash / E-Wallet` (Default ON)
+       - `Maya` (Default ON)
+       - `Credit / Debit Card` (Default ON)
+       - `Paylater / Store Credit` (Default OFF)
+     - Dynamic UI Rendering:
+       - `CartView.tsx` Invoice pills render **ONLY** the enabled payment methods.
+       - Grid layout adjusts dynamically (`grid-cols-1`, `grid-cols-2`, `grid-cols-3`, `grid-cols-4`).
+       - `CheckoutModal.tsx` payment selector pills automatically filter to enabled options.
+- **Acceptance Criteria:**
+  - [ ] Toggling OFF "Enable Tax / VAT" immediately removes the "Tax (12% VAT Incl)" line from the Invoice panel.
+  - [ ] Toggling OFF Credit Card and Paylater removes their buttons from CartView and CheckoutModal.
+  - [ ] Toggling ON GCash displays the GCash pill with custom E-Wallet icon.
+  - [ ] Settings persist across restarts via `useSettingsStore` and `localStorage`.
+
+### 3.12. Order History Multi-Criteria Sorting Engine
+- **Feature Title:** Multi-Field Order History Sorting & Clickable Column Sort Engine
+- **Target Personas:**
+  - **Store Manager / Auditor:** Auditing shift receipts, reviewing top-spending tickets, or verifying chronological transaction sequences.
+  - **Cashier:** Quickly locating a specific morning receipt or sorting by highest ticket total.
+- **User Stories:**
+  - *As a Store Auditor*, I want to sort orders by Total Amount (Highest First) so that I can inspect our largest sales transactions.
+  - *As a Cashier*, I want to click table column headers or pick from a quick sort menu to organize orders by Date (Newest/Oldest), Amount (High/Low), or Order Number.
+- **Resolved Clarifications & Technical Protocols:**
+  - **Default Sort Order:** Default to **Date: Newest First** (`createdAt` descending) so cashiers and auditors immediately see their latest transactions upon entering the history view.
+  - **Context-Aware Column Header Taps:**
+    - `Date & Time` & `Total Amount`: 1st click sorts **Descending** (Newest first / Highest value first); 2nd click reverses to Ascending.
+    - `Order Number` & `Cashier Name`: 1st click sorts **Ascending** (0-9 sequential / A-Z alphabetical); 2nd click reverses to Descending.
+    - Active column header is highlighted in `text-blue-600` with directional chevron/arrow (`ArrowUp` / `ArrowDown`), while inactive columns show subtle dual arrows (`ArrowUpDown`).
+  - **Dual-Trigger Control Surface:** Provide both an accessible **Quick Sort Dropdown** in the filter toolbar (optimized for tablet touch taps) and **Clickable Column Headers** on the table (`<th>`).
+- **Functional Requirements:**
+  1. **Sort Dimensions & Fields:**
+     - `Date & Time` (`createdAt`): Newest First (`desc`, default) vs Oldest First (`asc`).
+     - `Total Amount` (`total`): Highest First (`desc`) vs Lowest First (`asc`).
+     - `Order Number` (`orderNumber`): Natural alphanumeric sort (`asc` / `desc`).
+     - `Cashier Name` (`cashierName`): Alphabetical sort A–Z / Z–A.
+  2. **Dual-Trigger UI Controls:**
+     - **Quick Sort Selector:** Dropdown / pill menu in the filter bar with readable presets (`Date: Newest First`, `Date: Oldest First`, `Amount: High to Low`, `Amount: Low to High`).
+     - **Clickable Table Headers (`<th>`):** Clicking `Order #`, `Date & Time`, `Total Amount`, or `Cashier` toggles between `asc` and `desc` with animated sort direction icons (`ArrowUpDown`, `ArrowUp`, `ArrowDown`).
+  3. **Seamless Filter Compatibility:**
+     - Sorting operates on filtered subsets (preserving active search terms, payment method filters, and date ranges) with zero latency (<5ms) using client-side memoized sorting.
+- **Acceptance Criteria:**
+  - [ ] Opening Order History defaults to `Date: Newest First`.
+  - [ ] Selecting "Amount: High to Low" immediately displays the largest orders at the top of the table.
+  - [ ] Clicking the "Date & Time" header switches from Newest First to Oldest First with an up-arrow icon.
+  - [ ] Clicked column header displays an active accent color (`text-blue-600`) and the active sort indicator.
+  - [ ] Search and payment method filters remain fully intact while switching sort orders.
+
 ---
 
 ## 4. Non-Functional Requirements

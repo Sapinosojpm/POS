@@ -1,6 +1,14 @@
 import { create } from 'zustand';
 import { useCartStore } from './useCartStore';
 
+export interface EnabledPaymentMethods {
+  cash: boolean;
+  card: boolean;
+  gcash: boolean;
+  maya: boolean;
+  paylater: boolean;
+}
+
 export interface StoreSettings {
   storeName: string;
   branchName: string;
@@ -11,8 +19,10 @@ export interface StoreSettings {
   receiptFooter: string;
   currency: string;
   currencyCode: string;
+  enableTax: boolean;
   taxRate: number;
   isTaxInclusive: boolean;
+  enabledPaymentMethods: EnabledPaymentMethods;
   paperWidth: '58mm' | '80mm';
   autoPrintReceipt: boolean;
   autoKickDrawer: boolean;
@@ -29,8 +39,16 @@ const DEFAULT_SETTINGS: StoreSettings = {
   receiptFooter: 'THANK YOU FOR DINING WITH US!\nPLEASE COME AGAIN.',
   currency: '₱',
   currencyCode: 'PHP',
+  enableTax: true,
   taxRate: 12,
   isTaxInclusive: true,
+  enabledPaymentMethods: {
+    cash: true,
+    gcash: true,
+    maya: true,
+    card: false,
+    paylater: false,
+  },
   paperWidth: '58mm',
   autoPrintReceipt: true,
   autoKickDrawer: true,
@@ -43,7 +61,16 @@ const loadSavedSettings = (): StoreSettings => {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
-      return { ...DEFAULT_SETTINGS, ...JSON.parse(raw) };
+      const parsed = JSON.parse(raw);
+      return {
+        ...DEFAULT_SETTINGS,
+        ...parsed,
+        enableTax: parsed.enableTax !== undefined ? parsed.enableTax : true,
+        enabledPaymentMethods: {
+          ...DEFAULT_SETTINGS.enabledPaymentMethods,
+          ...(parsed.enabledPaymentMethods || {}),
+        },
+      };
     }
   } catch (err) {
     console.warn('Failed to parse saved settings, using defaults:', err);

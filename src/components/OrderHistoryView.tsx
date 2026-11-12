@@ -12,6 +12,10 @@ import {
   CheckCircle2,
   AlertCircle,
   FileSpreadsheet,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
+  ChevronDown,
 } from 'lucide-react';
 import { db } from '../core/db';
 import { useCartStore } from '../store/useCartStore';
@@ -19,6 +23,9 @@ import { printerService } from '../core/hardware/printer';
 import { toast } from '../store/useToastStore';
 import type { Order, OrderItem, PaymentMethod } from '../types';
 import { TableRowSkeleton } from './Skeleton';
+
+export type OrderSortField = 'createdAt' | 'total' | 'orderNumber' | 'cashierName';
+export type SortDirection = 'asc' | 'desc';
 
 interface OrderWithItems extends Order {
   itemSummary?: string;
@@ -33,6 +40,8 @@ export const OrderHistoryView: React.FC = () => {
   const [statusFilter] = useState<'ALL' | 'COMPLETED' | 'VOIDED'>('ALL');
   const [selectedOrder, setSelectedOrder] = useState<OrderWithItems | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [sortField, setSortField] = useState<OrderSortField>('createdAt');
+  const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
 
   useEffect(() => {
     loadOrders();
@@ -248,6 +257,47 @@ export const OrderHistoryView: React.FC = () => {
     return matchesSearch && matchesPayment && matchesStatus;
   });
 
+  const handleSort = (field: OrderSortField) => {
+    if (sortField === field) {
+      setSortDirection((prev) => (prev === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSortField(field);
+      // Context-aware 1st click:
+      // Date & Total Amount default to descending (newest / highest first)
+      // Order Number & Cashier Name default to ascending (0-9 / A-Z)
+      if (field === 'createdAt' || field === 'total') {
+        setSortDirection('desc');
+      } else {
+        setSortDirection('asc');
+      }
+    }
+  };
+
+  const renderSortIcon = (field: OrderSortField) => {
+    if (sortField !== field) {
+      return <ArrowUpDown className="w-3 h-3 text-slate-300 group-hover:text-slate-400 transition" />;
+    }
+    return sortDirection === 'asc' ? (
+      <ArrowUp className="w-3 h-3 text-blue-600" />
+    ) : (
+      <ArrowDown className="w-3 h-3 text-blue-600" />
+    );
+  };
+
+  const sortedOrders = [...filteredOrders].sort((a, b) => {
+    let comparison = 0;
+    if (sortField === 'createdAt') {
+      comparison = a.createdAt - b.createdAt;
+    } else if (sortField === 'total') {
+      comparison = a.total - b.total;
+    } else if (sortField === 'orderNumber') {
+      comparison = a.orderNumber.localeCompare(b.orderNumber, undefined, { numeric: true, sensitivity: 'base' });
+    } else if (sortField === 'cashierName') {
+      comparison = a.cashierName.localeCompare(b.cashierName, undefined, { sensitivity: 'base' });
+    }
+    return sortDirection === 'asc' ? comparison : -comparison;
+  });
+
   // KPI Calculations
   const completedOrders = orders.filter((o) => o.status === 'COMPLETED');
   const totalRevenue = completedOrders.reduce((sum, o) => sum + o.total, 0);
@@ -288,7 +338,7 @@ export const OrderHistoryView: React.FC = () => {
         <button
           onClick={() => {
             const csv = 'OrderNumber,Date,Cashier,PaymentMethod,Total,Status\n' +
-              filteredOrders.map(o => `${o.orderNumber},${new Date(o.createdAt).toLocaleString()},${o.cashierName},${o.paymentMethod},${o.total},${o.status}`).join('\n');
+              sortedOrders.map(o => `${o.orderNumber},${new Date(o.createdAt).toLocaleString()},${o.cashierName},${o.paymentMethod},${o.total},${o.status}`).join('\n');
             const blob = new Blob([csv], { type: 'text/csv' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -381,24 +431,56 @@ export const OrderHistoryView: React.FC = () => {
           )}
         </div>
 
-        {/* Payment Filter Pills */}
-        <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none">
-          {(['ALL', 'CASH', 'GCASH', 'MAYA', 'CARD'] as const).map((method) => {
-            const isSelected = paymentFilter === method;
-            return (
-              <button
-                key={method}
-                onClick={() => handlePaymentFilterChange(method)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap active:scale-95 ${
-                  isSelected
-                    ? 'bg-blue-600 text-white shadow-xs'
-                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200 hover:text-slate-900'
-                }`}
-              >
-                {method === 'ALL' ? 'All Payments' : method}
-              </button>
-            );
-          })}
+        {/* Payment Filter Pills & Quick Sort Dropdown */}
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Payment Filter Pills */}
+          <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none">
+            {(['ALL', 'CASH', 'GCASH', 'MAYA', 'CARD'] as const).map((method) => {
+              const isSelected = paymentFilter === method;
+              return (
+                <button
+                  key={method}
+                  onClick={() => handlePaymentFilterChange(method)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap active:scale-95 ${
+                    isSelected
+                      ? 'bg-blue-600 text-white shadow-xs'
+                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200 hover:text-slate-900'
+                  }`}
+                >
+                  {method === 'ALL' ? 'All Payments' : method}
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="h-6 w-px bg-slate-200 hidden sm:block" />
+
+          {/* Quick Sort Selector Dropdown */}
+          <div className="relative inline-flex items-center shrink-0">
+            <ArrowUpDown className="w-3.5 h-3.5 absolute left-3 text-slate-400 pointer-events-none" />
+            <select
+              value={`${sortField}-${sortDirection}`}
+              onChange={(e) => {
+                const [field, direction] = e.target.value.split('-') as [OrderSortField, SortDirection];
+                setSortField(field);
+                setSortDirection(direction);
+              }}
+              aria-label="Sort orders"
+              className="appearance-none bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 font-bold text-xs rounded-lg pl-8 pr-8 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500 transition cursor-pointer shadow-2xs"
+            >
+              <option value="createdAt-desc">Date: Newest First</option>
+              <option value="createdAt-asc">Date: Oldest First</option>
+              <option value="total-desc">Amount: High to Low</option>
+              <option value="total-asc">Amount: Low to High</option>
+              <option value="orderNumber-asc">Order #: Ascending</option>
+              <option value="orderNumber-desc">Order #: Descending</option>
+              <option value="cashierName-asc">Cashier: A to Z</option>
+              <option value="cashierName-desc">Cashier: Z to A</option>
+            </select>
+            <div className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400">
+              <ChevronDown className="w-3.5 h-3.5" />
+            </div>
+          </div>
         </div>
       </div>
 
@@ -408,11 +490,61 @@ export const OrderHistoryView: React.FC = () => {
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="border-b border-slate-200 bg-slate-50/80 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-                <th className="py-3 px-5">Order ID & Time</th>
-                <th className="py-3 px-3">Cashier</th>
+                <th className="py-3 px-5">
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => handleSort('orderNumber')}
+                      className={`group inline-flex items-center gap-1 hover:text-blue-600 transition cursor-pointer ${
+                        sortField === 'orderNumber' ? 'text-blue-600 font-black' : 'text-slate-500'
+                      }`}
+                      title="Sort by Order #"
+                    >
+                      <span>Order #</span>
+                      {renderSortIcon('orderNumber')}
+                    </button>
+                    <span className="text-slate-300">•</span>
+                    <button
+                      type="button"
+                      onClick={() => handleSort('createdAt')}
+                      className={`group inline-flex items-center gap-1 hover:text-blue-600 transition cursor-pointer ${
+                        sortField === 'createdAt' ? 'text-blue-600 font-black' : 'text-slate-500'
+                      }`}
+                      title="Sort by Date & Time"
+                    >
+                      <span>Time</span>
+                      {renderSortIcon('createdAt')}
+                    </button>
+                  </div>
+                </th>
+                <th className="py-3 px-3">
+                  <button
+                    type="button"
+                    onClick={() => handleSort('cashierName')}
+                    className={`group inline-flex items-center gap-1 hover:text-blue-600 transition cursor-pointer ${
+                      sortField === 'cashierName' ? 'text-blue-600 font-black' : 'text-slate-500'
+                    }`}
+                    title="Sort by Cashier Name"
+                  >
+                    <span>Cashier</span>
+                    {renderSortIcon('cashierName')}
+                  </button>
+                </th>
                 <th className="py-3 px-4">Items Summary</th>
                 <th className="py-3 px-3">Payment</th>
-                <th className="py-3 px-3">Total Amount</th>
+                <th className="py-3 px-3">
+                  <button
+                    type="button"
+                    onClick={() => handleSort('total')}
+                    className={`group inline-flex items-center gap-1 hover:text-blue-600 transition cursor-pointer ${
+                      sortField === 'total' ? 'text-blue-600 font-black' : 'text-slate-500'
+                    }`}
+                    title="Sort by Total Amount"
+                  >
+                    <span>Total Amount</span>
+                    {renderSortIcon('total')}
+                  </button>
+                </th>
                 <th className="py-3 px-3">Status</th>
                 <th className="py-3 px-5 text-right">Actions</th>
               </tr>
@@ -420,7 +552,7 @@ export const OrderHistoryView: React.FC = () => {
             <tbody className="divide-y divide-slate-100 text-xs">
               {isLoading ? (
                 Array.from({ length: 5 }).map((_, i) => <TableRowSkeleton key={i} />)
-              ) : filteredOrders.length === 0 ? (
+              ) : sortedOrders.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="py-12 text-center text-slate-400">
                     <Receipt className="w-8 h-8 mx-auto mb-2 text-slate-300 stroke-1" />
@@ -431,7 +563,7 @@ export const OrderHistoryView: React.FC = () => {
                   </td>
                 </tr>
               ) : (
-                filteredOrders.map((ord) => {
+                sortedOrders.map((ord) => {
                   const dateStr = new Date(ord.createdAt);
                   const timeFormatted = dateStr.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
                   const dateFormatted = dateStr.toLocaleDateString([], { month: 'short', day: 'numeric' });

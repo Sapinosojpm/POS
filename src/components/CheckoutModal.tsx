@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
-import { X, CheckCircle, Printer, CreditCard, Banknote, Smartphone, Clock } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { X, CheckCircle, Printer, CreditCard, Banknote, Smartphone, Clock, Wallet } from 'lucide-react';
 import { useCartStore } from '../store/useCartStore';
+import { useSettingsStore } from '../store/useSettingsStore';
 import { db } from '../core/db';
 import { printerService } from '../core/hardware/printer';
 import { toast } from '../store/useToastStore';
@@ -32,6 +33,34 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose, o
 
   const total = getTotal();
   const breakdown = getDiscountBreakdown();
+  const { settings } = useSettingsStore();
+
+  const enabledMethods = settings.enabledPaymentMethods || {
+    cash: true,
+    gcash: true,
+    maya: true,
+    card: false,
+    paylater: false,
+  };
+
+  const allCheckoutOptions: { id: PaymentMethod; label: string; icon: any; enabled: boolean }[] = [
+    { id: 'CASH', label: 'Cash', icon: Banknote, enabled: enabledMethods.cash !== false },
+    { id: 'GCASH', label: 'GCash', icon: Smartphone, enabled: !!enabledMethods.gcash },
+    { id: 'MAYA', label: 'Maya', icon: Wallet, enabled: !!enabledMethods.maya },
+    { id: 'CARD', label: 'Card', icon: CreditCard, enabled: !!enabledMethods.card },
+    { id: 'PAYLATER', label: 'Paylater', icon: Clock, enabled: !!enabledMethods.paylater },
+  ];
+
+  const activeCheckoutOptions = allCheckoutOptions.filter((opt) => opt.enabled);
+  const optionsToRender = activeCheckoutOptions.length > 0 ? activeCheckoutOptions : [allCheckoutOptions[0]];
+
+  useEffect(() => {
+    // If current payment method is disabled, fallback to first enabled option
+    if (!optionsToRender.some((opt) => opt.id === paymentMethod)) {
+      setPaymentMethod(optionsToRender[0].id);
+    }
+  }, [optionsToRender, paymentMethod]);
+
   const tendered = parseFloat(tenderedStr) || 0;
   const changeDue = Math.max(0, tendered - total);
   const isExactOrOver = paymentMethod !== 'CASH' || tendered >= total;
@@ -203,14 +232,9 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose, o
         ) : (
           /* Payment Methods & Numpad Screen */
           <div className="p-5 overflow-y-auto space-y-3.5 scrollbar-none">
-            {/* Payment Method Selector Pills */}
-            <div className="grid grid-cols-4 gap-2">
-              {[
-                { id: 'CASH', label: 'Cash', icon: Banknote },
-                { id: 'CARD', label: 'Card', icon: CreditCard },
-                { id: 'GCASH', label: 'E-Wallet', icon: Smartphone },
-                { id: 'MAYA', label: 'Paylater', icon: Clock },
-              ].map(({ id, label, icon: Icon }) => (
+            {/* Payment Method Selector Pills (Dynamic from Settings) */}
+            <div className={`grid ${optionsToRender.length <= 3 ? `grid-cols-${optionsToRender.length}` : 'grid-cols-2 sm:grid-cols-4'} gap-2`}>
+              {optionsToRender.map(({ id, label, icon: Icon }) => (
                 <button
                   key={id}
                   onClick={() => {

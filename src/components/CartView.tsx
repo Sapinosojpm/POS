@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { CreditCard, Clock, Banknote, ArrowRight, ShoppingBag, Trash2, Plus, Minus, Award, X, PauseCircle, PackageOpen } from 'lucide-react';
+import { CreditCard, Clock, Banknote, ArrowRight, ShoppingBag, Trash2, Plus, Minus, Award, X, PauseCircle, PackageOpen, Smartphone, Wallet } from 'lucide-react';
 import { useCartStore } from '../store/useCartStore';
+import { useSettingsStore } from '../store/useSettingsStore';
 import { DiscountModal } from './DiscountModal';
 import { HoldCartModal } from './HoldCartModal';
 import { HeldOrdersModal } from './HeldOrdersModal';
@@ -37,12 +38,35 @@ export const CartView: React.FC<CartViewProps> = ({ onOpenCheckout }) => {
   const breakdown = getDiscountBreakdown();
   const subtotal = getSubtotal();
   const total = getTotal();
+  const { settings } = useSettingsStore();
 
-  const paymentOptions = [
-    { id: 'CARD', label: 'Credit Card', icon: CreditCard },
-    { id: 'MAYA', label: 'Paylater', icon: Clock },
-    { id: 'CASH', label: 'Cash Payout', icon: Banknote },
+  const enabledMethods = settings.enabledPaymentMethods || {
+    cash: true,
+    gcash: true,
+    maya: true,
+    card: false,
+    paylater: false,
+  };
+
+  const allPaymentOptions: { id: PaymentMethod; label: string; icon: any; enabled: boolean }[] = [
+    { id: 'CASH', label: 'Cash', icon: Banknote, enabled: enabledMethods.cash !== false },
+    { id: 'GCASH', label: 'GCash', icon: Smartphone, enabled: !!enabledMethods.gcash },
+    { id: 'MAYA', label: 'Maya', icon: Wallet, enabled: !!enabledMethods.maya },
+    { id: 'CARD', label: 'Card', icon: CreditCard, enabled: !!enabledMethods.card },
+    { id: 'PAYLATER', label: 'Paylater', icon: Clock, enabled: !!enabledMethods.paylater },
   ];
+
+  const paymentOptions = allPaymentOptions.filter((opt) => opt.enabled);
+  const activeOptions = paymentOptions.length > 0 ? paymentOptions : [allPaymentOptions[0]];
+
+  const gridColsClass =
+    activeOptions.length === 1
+      ? 'grid-cols-1'
+      : activeOptions.length === 2
+      ? 'grid-cols-2'
+      : activeOptions.length === 3
+      ? 'grid-cols-3'
+      : 'grid-cols-2 sm:grid-cols-4';
 
   return (
     <aside className="w-80 lg:w-[350px] bg-white border-l border-slate-200 p-5 flex flex-col h-full shrink-0 select-none">
@@ -251,11 +275,13 @@ export const CartView: React.FC<CartViewProps> = ({ onOpenCheckout }) => {
             </div>
           )}
 
-          {/* Regular VAT if mixed or regular */}
-          <div className="flex justify-between">
-            <span>Tax ({breakdown.vatExemptAmount > 0 ? 'Regular VAT' : '12% VAT Incl'})</span>
-            <span className="font-bold text-slate-800">{currency}{breakdown.tax.toFixed(2)}</span>
-          </div>
+          {/* Regular VAT if enabled in store settings */}
+          {settings.enableTax && (
+            <div className="flex justify-between">
+              <span>Tax ({breakdown.vatExemptAmount > 0 ? 'Regular VAT' : `${settings.taxRate || 12}% VAT Incl`})</span>
+              <span className="font-bold text-slate-800">{currency}{breakdown.tax.toFixed(2)}</span>
+            </div>
+          )}
 
           <div className="flex justify-between text-sm font-black text-slate-900 pt-2 border-t border-slate-200">
             <span>Total Payment</span>
@@ -263,9 +289,9 @@ export const CartView: React.FC<CartViewProps> = ({ onOpenCheckout }) => {
           </div>
         </div>
 
-        {/* Payment Method Pills */}
-        <div className="grid grid-cols-3 gap-1.5 pt-1.5">
-          {paymentOptions.map(({ id, label, icon: Icon }) => {
+        {/* Payment Method Pills (Dynamically filtered from Settings) */}
+        <div className={`grid ${gridColsClass} gap-1.5 pt-1.5`}>
+          {activeOptions.map(({ id, label, icon: Icon }) => {
             const isSelected = paymentMethod === id;
             return (
               <button

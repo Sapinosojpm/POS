@@ -180,6 +180,32 @@ The viewport is divided into three primary zones in a landscape tablet/desktop v
   - Pre-flight preview pill counters: `[Total In File]`, `[New Items]`, `[Updates / Price Overrides]`.
   - Primary Action: `Commit Import` in vibrant blue (`bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 rounded-lg shadow-sm`).
 
+### 3.10. VAT Toggle & Dynamic Payment Method Grid (Restoe Tokens)
+- **Settings Toggle Controls:**
+  - Standard toggle switch: `w-11 h-6 rounded-full transition-colors relative cursor-pointer`, active `bg-blue-600`, inactive `bg-slate-300`.
+  - Accessible label & helper text: `text-xs font-bold text-slate-900` with muted subtitle `text-[11px] text-slate-400`.
+- **CartView Invoice Panel Payment Grid:**
+  - Auto-responsive column distribution based on enabled count:
+    - 1 method active: `grid-cols-1`
+    - 2 methods active: `grid-cols-2`
+    - 3 methods active: `grid-cols-3`
+    - 4+ methods active: `grid-cols-2 sm:grid-cols-4`
+  - Pill active state: `border-blue-600 bg-blue-50 text-blue-600 shadow-xs`.
+  - Pill inactive state: `border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100`.
+
+### 3.11. Order History Sorting UI & Interactive Table Headers (Restoe Tokens)
+- **Quick Sort Filter Dropdown / Pill:**
+  - Control wrapper: `flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-700 shadow-2xs hover:bg-slate-50 cursor-pointer transition active:scale-95`.
+  - Icon: `ArrowUpDown` in `w-3.5 h-3.5 text-blue-600`.
+- **Interactive Sortable Table Headers (`<th>`):**
+  - Interactive header container: `group cursor-pointer select-none py-3 px-4 hover:text-blue-600 transition-colors flex items-center gap-1.5`.
+  - Inactive header: `text-slate-400 font-bold text-[11px] uppercase tracking-wider`.
+  - Active header: `text-blue-600 font-black text-[11px] uppercase tracking-wider bg-blue-50/40 rounded-md px-1.5 py-0.5`.
+  - Sort direction indicator:
+    - Inactive / Hover: `ArrowUpDown` in `w-3 h-3 text-slate-300 group-hover:text-blue-400 transition-colors`.
+    - Active Ascending: `ArrowUp` in `w-3 h-3 text-blue-600 stroke-[2.5]`.
+    - Active Descending: `ArrowDown` in `w-3 h-3 text-blue-600 stroke-[2.5]`.
+
 ---
 
 ## 4. Skeleton Loading Patterns (Zero-Latency Perceived Performance)
