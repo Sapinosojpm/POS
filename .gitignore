@@ -5,6 +5,8 @@ node_modules/
 # Production Build
 dist/
 dist-ssr/
+build-apk/
+*.apk
 *.local
 
 # Capacitor Android

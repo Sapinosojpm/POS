@@ -21,8 +21,17 @@ import {
   Banknote,
   Smartphone,
   Clock,
+  ShoppingBag,
+  Utensils,
+  Flame,
+  Sparkles,
+  Users,
+  Plus,
+  Trash2,
+  Key,
 } from 'lucide-react';
-import { useSettingsStore, type StoreSettings, type EnabledPaymentMethods } from '../store/useSettingsStore';
+import { useSettingsStore, type StoreSettings, type EnabledPaymentMethods, type BusinessType } from '../store/useSettingsStore';
+import { useAuthStore } from '../store/useAuthStore';
 import { printerService } from '../core/hardware/printer';
 import { playScanSuccessSound, playScanErrorSound, triggerHaptic } from '../core/hardware/scannerFeedback';
 import { BarcodeScannerModal } from './BarcodeScannerModal';
@@ -32,8 +41,15 @@ import { toast } from '../store/useToastStore';
 
 export const SettingsView: React.FC = () => {
   const { settings, updateSettings, resetSettings } = useSettingsStore();
+  const { users, addUser, deleteUser, resetUsersToDefault } = useAuthStore();
   const [formData, setFormData] = useState<StoreSettings>({ ...settings });
-  const [activeSection, setActiveSection] = useState<'store' | 'printer' | 'finance' | 'data' | 'scanner' | 'payments'>('store');
+  const [activeSection, setActiveSection] = useState<'store' | 'staff' | 'payments' | 'finance' | 'printer' | 'scanner' | 'data'>('store');
+  const [isAddStaffOpen, setIsAddStaffOpen] = useState(false);
+  const [staffForm, setStaffForm] = useState<{ name: string; role: 'CASHIER' | 'MANAGER'; pin: string }>({
+    name: '',
+    role: 'CASHIER',
+    pin: '',
+  });
   const [pinInput, setPinInput] = useState('');
   const [isPinModalOpen, setIsPinModalOpen] = useState(false);
   const [pinAction, setPinAction] = useState<'reset' | 'changePin' | null>(null);
@@ -336,6 +352,7 @@ export const SettingsView: React.FC = () => {
           <div className="flex items-center gap-1.5 p-1 bg-white border border-slate-200 rounded-xl shrink-0 overflow-x-auto scrollbar-none">
             {[
               { id: 'store', label: 'Store Identity', icon: Store },
+              { id: 'staff', label: 'Staff & PINs', icon: Users },
               { id: 'payments', label: 'Payment Methods', icon: CreditCard },
               { id: 'finance', label: 'Tax & Currency', icon: DollarSign },
               { id: 'printer', label: 'Thermal Printer', icon: Printer },
@@ -391,6 +408,112 @@ export const SettingsView: React.FC = () => {
                     <p className="text-[11px] text-slate-500">
                       Displayed on the navigation sidebar, browser tab, and POS terminal display.
                     </p>
+                  </div>
+                </div>
+
+                {/* POS System Mode / Business Type */}
+                <div className="space-y-2 pt-1">
+                  <div className="flex items-center justify-between">
+                    <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                      POS Business Mode & Layout
+                    </label>
+                    <span className="text-[10px] font-semibold text-blue-600 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded-full">
+                      Universal POS
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-500">
+                    Select your business profile. This automatically configures whether dining options (Dine-in / Takeout tabs & Table numbers) are enabled or hidden.
+                  </p>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    {[
+                      {
+                        id: 'RETAIL' as BusinessType,
+                        title: 'Retail & Grocery',
+                        desc: 'Supermarket, Minimart, Sari-Sari. Fast counter scanning without dining clutter.',
+                        icon: ShoppingBag,
+                        color: 'text-emerald-600 bg-emerald-50 border-emerald-200',
+                        enableDining: false,
+                      },
+                      {
+                        id: 'VAPE_SHOP' as BusinessType,
+                        title: 'Vape Shop & Specialty',
+                        desc: 'Vape lounge, Apparel, Gadgets. Direct counter sales with optional customer notes.',
+                        icon: Flame,
+                        color: 'text-purple-600 bg-purple-50 border-purple-200',
+                        enableDining: false,
+                      },
+                      {
+                        id: 'RESTAURANT' as BusinessType,
+                        title: 'Restaurant & Cafe',
+                        desc: 'Food & drinks. Enables Dine-in, Takeout tabs, and Table number tracking.',
+                        icon: Utensils,
+                        color: 'text-amber-600 bg-amber-50 border-amber-200',
+                        enableDining: true,
+                      },
+                      {
+                        id: 'SERVICES' as BusinessType,
+                        title: 'Services & Salon',
+                        desc: 'Repair shop, Salon, Services. Quick checkout with customer reference.',
+                        icon: Sparkles,
+                        color: 'text-blue-600 bg-blue-50 border-blue-200',
+                        enableDining: false,
+                      },
+                    ].map((item) => {
+                      const isSelected = formData.businessType === item.id;
+                      const Icon = item.icon;
+                      return (
+                        <button
+                          key={item.id}
+                          type="button"
+                          onClick={() => {
+                            handleChange('businessType', item.id);
+                            handleChange('enableDiningOptions', item.enableDining);
+                          }}
+                          className={`p-3 rounded-xl border text-left transition active:scale-[0.98] flex items-start gap-3 cursor-pointer ${
+                            isSelected
+                              ? 'bg-blue-50/80 border-blue-500 ring-2 ring-blue-500/20 shadow-xs'
+                              : 'bg-slate-50 hover:bg-slate-100/70 border-slate-200 text-slate-600'
+                          }`}
+                        >
+                          <div className={`p-2 rounded-lg border ${item.color} shrink-0`}>
+                            <Icon className="w-4 h-4" />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center justify-between">
+                              <span className={`text-xs font-bold ${isSelected ? 'text-blue-900' : 'text-slate-800'}`}>
+                                {item.title}
+                              </span>
+                              {isSelected && <Check className="w-3.5 h-3.5 text-blue-600 shrink-0 stroke-[2.5]" />}
+                            </div>
+                            <p className="text-[11px] text-slate-500 mt-0.5 leading-snug">
+                              {item.desc}
+                            </p>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* Explicit toggle for dining options */}
+                  <div className="mt-2.5 p-3.5 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between gap-3">
+                    <div>
+                      <span className="text-xs font-bold text-slate-800 block">
+                        Enable Dining Options (Dine-in / Takeout & Table #)
+                      </span>
+                      <p className="text-[11px] text-slate-500 mt-0.5">
+                        Shows the Dine-in / Takeout tabs and Table Number input on the Cashier Invoice.
+                      </p>
+                    </div>
+                    <label className="relative inline-flex items-center cursor-pointer shrink-0">
+                      <input
+                        type="checkbox"
+                        checked={formData.enableDiningOptions}
+                        onChange={(e) => handleChange('enableDiningOptions', e.target.checked)}
+                        className="sr-only peer"
+                      />
+                      <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                    </label>
                   </div>
                 </div>
 
@@ -707,6 +830,190 @@ export const SettingsView: React.FC = () => {
                       📳 Test Haptic Vibration
                     </button>
                   </div>
+                </div>
+              </div>
+            )}
+
+            {/* SECTION: STAFF & PINS */}
+            {activeSection === 'staff' && (
+              <div className="space-y-4 animate-in fade-in duration-200">
+                <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                  <div>
+                    <h3 className="font-bold text-sm text-slate-900">Staff Accounts & PIN Access</h3>
+                    <p className="text-xs text-slate-400 mt-0.5">
+                      Manage cashiers and manager PINs used on the terminal login screen.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setStaffForm({ name: '', role: 'CASHIER', pin: '' });
+                      setIsAddStaffOpen(true);
+                    }}
+                    className="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold flex items-center gap-1.5 transition active:scale-95 cursor-pointer shadow-xs"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Add Staff</span>
+                  </button>
+                </div>
+
+                {/* Add Staff Form Modal / Card */}
+                {isAddStaffOpen && (
+                  <div className="p-4 bg-blue-50/60 border border-blue-200 rounded-xl space-y-3 animate-in fade-in duration-150">
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-xs font-bold text-blue-900 uppercase tracking-wider">New Staff Member</h4>
+                      <button
+                        type="button"
+                        onClick={() => setIsAddStaffOpen(false)}
+                        className="text-xs font-bold text-slate-400 hover:text-slate-600"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-600 mb-1">Staff Name</label>
+                        <input
+                          type="text"
+                          value={staffForm.name}
+                          onChange={(e) => setStaffForm({ ...staffForm, name: e.target.value })}
+                          placeholder="e.g. Maria Santos"
+                          className="w-full h-8 px-2.5 rounded-lg bg-white border border-slate-200 text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-600 mb-1">Role</label>
+                        <select
+                          value={staffForm.role}
+                          onChange={(e) => setStaffForm({ ...staffForm, role: e.target.value as any })}
+                          className="w-full h-8 px-2 rounded-lg bg-white border border-slate-200 text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        >
+                          <option value="CASHIER">Cashier</option>
+                          <option value="MANAGER">Manager</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-600 mb-1">4-Digit PIN</label>
+                        <input
+                          type="text"
+                          maxLength={4}
+                          value={staffForm.pin}
+                          onChange={(e) => {
+                            const val = e.target.value.replace(/\D/g, '');
+                            setStaffForm({ ...staffForm, pin: val });
+                          }}
+                          placeholder="e.g. 5555"
+                          className="w-full h-8 px-2.5 rounded-lg bg-white border border-slate-200 text-xs font-mono font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex justify-end pt-1">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (!staffForm.name.trim()) {
+                            toast.error('Validation Error', 'Please enter staff name.');
+                            return;
+                          }
+                          if (staffForm.pin.length !== 4) {
+                            toast.error('Validation Error', 'PIN must be exactly 4 digits.');
+                            return;
+                          }
+                          addUser({
+                            name: staffForm.name.trim(),
+                            role: staffForm.role,
+                            pin: staffForm.pin,
+                            color: staffForm.role === 'MANAGER' ? 'bg-purple-600' : 'bg-blue-600',
+                          });
+                          setIsAddStaffOpen(false);
+                          toast.success('Staff Added', `${staffForm.name} registered with PIN ${staffForm.pin}`);
+                        }}
+                        className="px-4 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition active:scale-95 cursor-pointer"
+                      >
+                        Save Staff Member
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Staff List Cards */}
+                <div className="space-y-2.5">
+                  {users.map((staff) => (
+                    <div
+                      key={staff.id}
+                      className="p-3 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between gap-3 shadow-2xs"
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        {staff.avatar ? (
+                          <img
+                            src={staff.avatar}
+                            alt={staff.name}
+                            className="w-10 h-10 rounded-xl object-cover ring-1 ring-slate-200 shrink-0"
+                          />
+                        ) : (
+                          <div
+                            className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold text-white text-xs shrink-0 ${
+                              staff.color || 'bg-blue-600'
+                            }`}
+                          >
+                            {staff.name.slice(0, 2).toUpperCase()}
+                          </div>
+                        )}
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2">
+                            <h4 className="font-bold text-xs text-slate-900 truncate">{staff.name}</h4>
+                            <span
+                              className={`text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded ${
+                                staff.role === 'MANAGER'
+                                  ? 'bg-purple-100 text-purple-700'
+                                  : 'bg-blue-100 text-blue-700'
+                              }`}
+                            >
+                              {staff.role}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2 text-xs text-slate-500 font-mono mt-0.5">
+                            <Key className="w-3 h-3 text-slate-400" />
+                            <span>PIN: {staff.pin}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-1.5">
+                        {users.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              deleteUser(staff.id);
+                              toast.info('Staff Removed', `${staff.name} removed from terminal.`);
+                            }}
+                            className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition active:scale-95 cursor-pointer"
+                            title="Delete staff account"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Reset to Defaults button */}
+                <div className="pt-2 flex justify-end">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      resetUsersToDefault();
+                      toast.success('Staff Reset', 'Staff accounts restored to defaults (Courtney, Alex, Manager).');
+                    }}
+                    className="text-[11px] font-bold text-slate-500 hover:text-slate-800 transition"
+                  >
+                    Restore Demo Staff Accounts
+                  </button>
                 </div>
               </div>
             )}

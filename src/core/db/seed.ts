@@ -629,12 +629,29 @@ export const RESTOE_PRODUCTS: Product[] = [
   },
 ];
 
-export async function seedDatabaseIfEmpty() {
-  await db.categories.clear();
-  await db.products.clear();
+let seedInFlight: Promise<void> | null = null;
 
-  await db.categories.bulkAdd(RESTOE_CATEGORIES);
-  await db.products.bulkAdd(RESTOE_PRODUCTS);
+/**
+ * Re-entrancy guard: React StrictMode (dev) invokes effects twice, which made two
+ * concurrent clear()+bulkAdd() runs collide and throw Dexie BulkError (duplicate keys).
+ * Concurrent callers now share a single in-flight run, and writes are atomic.
+ */
+export function seedDatabaseIfEmpty(): Promise<void> {
+  if (!seedInFlight) {
+    seedInFlight = runSeed().finally(() => {
+      seedInFlight = null;
+    });
+  }
+  return seedInFlight;
+}
+
+async function runSeed(): Promise<void> {
+  await db.transaction('rw', db.categories, db.products, async () => {
+    await db.categories.clear();
+    await db.products.clear();
+    await db.categories.bulkPut(RESTOE_CATEGORIES);
+    await db.products.bulkPut(RESTOE_PRODUCTS);
+  });
 
   const existingShift = await db.shifts.where('status').equals('OPEN').first();
   if (!existingShift) {

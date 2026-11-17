@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { CreditCard, Clock, Banknote, ArrowRight, ShoppingBag, Trash2, Plus, Minus, Award, X, PauseCircle, PackageOpen, Smartphone, Wallet } from 'lucide-react';
+import { CreditCard, Clock, Banknote, ArrowRight, ShoppingBag, Trash2, Plus, Minus, Award, X, PauseCircle, PackageOpen, Smartphone, Wallet, Utensils, ChevronDown, ChevronUp, User, PanelRightClose } from 'lucide-react';
 import { useCartStore } from '../store/useCartStore';
 import { useSettingsStore } from '../store/useSettingsStore';
 import { DiscountModal } from './DiscountModal';
@@ -11,9 +11,11 @@ import type { PaymentMethod } from '../types';
 
 interface CartViewProps {
   onOpenCheckout: () => void;
+  onClose?: () => void;
+  onToggleCollapse?: () => void;
 }
 
-export const CartView: React.FC<CartViewProps> = ({ onOpenCheckout }) => {
+export const CartView: React.FC<CartViewProps> = ({ onOpenCheckout, onClose, onToggleCollapse }) => {
   const {
     items,
     paymentMethod,
@@ -27,6 +29,10 @@ export const CartView: React.FC<CartViewProps> = ({ onOpenCheckout }) => {
     removeItem,
     updateQuantity,
     clearCart,
+    orderType,
+    setOrderType,
+    tableLabel,
+    setTableLabel,
   } = useCartStore();
 
   const [isDiscountModalOpen, setIsDiscountModalOpen] = useState(false);
@@ -39,6 +45,8 @@ export const CartView: React.FC<CartViewProps> = ({ onOpenCheckout }) => {
   const subtotal = getSubtotal();
   const total = getTotal();
   const { settings } = useSettingsStore();
+  const isDiningEnabled = settings.enableDiningOptions || settings.businessType === 'RESTAURANT';
+  const [isOrderInfoExpanded, setIsOrderInfoExpanded] = useState(false);
 
   const enabledMethods = settings.enabledPaymentMethods || {
     cash: true,
@@ -69,26 +77,28 @@ export const CartView: React.FC<CartViewProps> = ({ onOpenCheckout }) => {
       : 'grid-cols-2 sm:grid-cols-4';
 
   return (
-    <aside className="w-80 lg:w-[350px] bg-white border-l border-slate-200 p-5 flex flex-col h-full shrink-0 select-none">
-      {/* Header */}
-      <div className="flex items-center justify-between pb-3 border-b border-slate-200 shrink-0">
-        <div className="flex items-center gap-2">
-          <h2 className="text-lg font-bold text-slate-900 tracking-tight">Invoice</h2>
-          <span className="text-xs font-semibold px-2 py-0.5 bg-blue-50 text-blue-600 rounded">
-            {items.reduce((s, i) => s + i.quantity, 0)} Items
+    <aside className="w-full lg:w-72 xl:w-80 2xl:w-[330px] bg-white border-l border-slate-200 p-3.5 sm:p-4 flex flex-col h-full shrink-0 select-none">
+      {/* Header with Zero Truncation */}
+      <div className="flex items-center justify-between pb-3 border-b border-slate-200 shrink-0 gap-2">
+        {/* Left: Title + Count Badge */}
+        <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+          <h2 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight shrink-0">Invoice</h2>
+          <span className="text-[11px] font-bold px-2 py-0.5 bg-blue-50 text-blue-600 rounded-full shrink-0">
+            {items.reduce((s, i) => s + i.quantity, 0)} {items.reduce((s, i) => s + i.quantity, 0) === 1 ? 'item' : 'items'}
           </span>
         </div>
 
-        <div className="flex items-center gap-1.5">
+        {/* Right: Compact Action Buttons (never truncated) */}
+        <div className="flex items-center gap-1 shrink-0">
           {heldOrdersCount > 0 && (
             <button
               type="button"
               onClick={() => setIsHeldOrdersModalOpen(true)}
-              className="text-[11px] font-bold text-amber-800 bg-amber-100 hover:bg-amber-200 px-2 py-1 rounded-md transition flex items-center gap-1 active:scale-95 shadow-2xs"
-              title="View parked / held orders"
+              className="h-8 px-2 rounded-lg bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-900 text-xs font-bold flex items-center gap-1 active:scale-95 transition shadow-2xs"
+              title={`${heldOrdersCount} held / parked orders`}
             >
-              <PackageOpen className="w-3.5 h-3.5" />
-              <span>{heldOrdersCount} Held</span>
+              <PackageOpen className="w-3.5 h-3.5 text-amber-600" />
+              <span>{heldOrdersCount}</span>
             </button>
           )}
 
@@ -97,91 +107,270 @@ export const CartView: React.FC<CartViewProps> = ({ onOpenCheckout }) => {
               <button
                 type="button"
                 onClick={() => setIsHoldModalOpen(true)}
-                className="text-[11px] font-bold text-amber-800 bg-amber-50 hover:bg-amber-100 border border-amber-200 px-2 py-1 rounded-md transition flex items-center gap-1 active:scale-95"
-                title="Park / Hold current cart"
+                className="h-8 px-2 sm:px-2.5 rounded-lg bg-slate-50 hover:bg-amber-50 hover:text-amber-800 hover:border-amber-200 border border-slate-200 text-slate-600 text-xs font-bold flex items-center gap-1 active:scale-95 transition"
+                title="Hold / Park this active order"
               >
-                <PauseCircle className="w-3.5 h-3.5" />
-                <span>Hold</span>
+                <PauseCircle className="w-3.5 h-3.5 text-amber-600" />
+                <span className="hidden sm:inline">Hold</span>
               </button>
 
               <button
+                type="button"
                 onClick={clearCart}
-                className="text-[11px] font-bold text-slate-400 hover:text-rose-600 hover:bg-rose-50 px-2 py-1 rounded-md transition flex items-center gap-1 active:scale-95"
+                className="h-8 w-8 rounded-lg bg-slate-50 hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200 border border-slate-200 text-slate-400 flex items-center justify-center active:scale-95 transition"
                 title="Clear all items from invoice"
               >
-                <Trash2 className="w-3 h-3" />
-                <span>Clear</span>
+                <Trash2 className="w-3.5 h-3.5" />
               </button>
             </>
           )}
+
+          {onToggleCollapse && (
+            <button
+              type="button"
+              onClick={onToggleCollapse}
+              className="h-8 w-8 rounded-lg bg-slate-50 hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200 border border-slate-200 text-slate-500 flex items-center justify-center active:scale-95 transition"
+              title="Collapse invoice to make products larger"
+            >
+              <PanelRightClose className="w-4 h-4" />
+            </button>
+          )}
+
+          {onClose && (
+            <button
+              type="button"
+              onClick={onClose}
+              className="lg:hidden h-8 w-8 rounded-lg text-slate-500 hover:bg-slate-100 flex items-center justify-center active:scale-95 transition"
+              title="Close drawer"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
         </div>
       </div>
+
+      {/* Collapsible Order Context & Dining Options (Configurable in Settings) */}
+      {isDiningEnabled ? (
+        // RESTAURANT / DINING MODE: Collapsible Dine-in / Takeout + Table Info
+        <div className="pt-2.5 shrink-0">
+          {!isOrderInfoExpanded ? (
+            // Collapsed Single-Line Bar
+            <button
+              type="button"
+              onClick={() => setIsOrderInfoExpanded(true)}
+              className="w-full h-8 px-2.5 rounded-lg bg-slate-100/90 hover:bg-slate-200/80 border border-slate-200/80 text-xs flex items-center justify-between transition active:scale-[0.99] text-left cursor-pointer"
+              title="Click to change Dine-in / Takeout or Table #"
+            >
+              <div className="flex items-center gap-1.5 min-w-0">
+                {orderType === 'DINE_IN' ? (
+                  <Utensils className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                ) : (
+                  <ShoppingBag className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                )}
+                <span className="font-bold text-slate-800 text-[11px]">
+                  {orderType === 'DINE_IN' ? 'Dine-in' : 'Takeout'}
+                </span>
+                {tableLabel ? (
+                  <span className="text-slate-600 font-semibold truncate text-[11px]">
+                    • {tableLabel}
+                  </span>
+                ) : (
+                  <span className="text-slate-400 text-[10px] truncate">
+                    • Tap to add table / details
+                  </span>
+                )}
+              </div>
+              <div className="flex items-center gap-1 text-slate-400 shrink-0">
+                <span className="text-[10px] font-bold text-slate-500 hidden sm:inline">Edit</span>
+                <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+              </div>
+            </button>
+          ) : (
+            // Expanded Card
+            <div className="p-2.5 bg-slate-50 border border-slate-200 rounded-xl space-y-2 animate-in fade-in duration-150">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1">
+                  <Utensils className="w-3 h-3 text-blue-600" />
+                  <span>Order Type & Table</span>
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setIsOrderInfoExpanded(false)}
+                  className="text-[11px] font-bold text-blue-600 hover:text-blue-700 flex items-center gap-0.5 active:scale-95 cursor-pointer"
+                >
+                  <span>Done</span>
+                  <ChevronUp className="w-3.5 h-3.5" />
+                </button>
+              </div>
+
+              <div className="grid grid-cols-2 gap-1 p-1 bg-slate-200/70 rounded-lg" role="tablist" aria-label="Order type">
+                {([
+                  { id: 'DINE_IN', label: 'Dine-in', icon: Utensils },
+                  { id: 'TAKEOUT', label: 'Takeout', icon: ShoppingBag },
+                ] as const).map(({ id, label, icon: Icon }) => {
+                  const active = orderType === id;
+                  return (
+                    <button
+                      key={id}
+                      type="button"
+                      role="tab"
+                      aria-selected={active}
+                      onClick={() => setOrderType(id)}
+                      className={`h-8 rounded-md text-xs font-bold flex items-center justify-center gap-1.5 transition active:scale-95 cursor-pointer ${
+                        active ? 'bg-white text-blue-600 shadow-xs' : 'text-slate-600 hover:text-slate-900'
+                      }`}
+                    >
+                      <Icon className="w-3.5 h-3.5" />
+                      <span>{label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              <input
+                type="text"
+                value={tableLabel}
+                onChange={(e) => setTableLabel(e.target.value)}
+                maxLength={30}
+                placeholder={orderType === 'DINE_IN' ? 'Table no. or name (optional)' : 'Customer name (optional)'}
+                className="w-full h-8 px-2.5 rounded-lg bg-white border border-slate-200 text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+          )}
+        </div>
+      ) : (
+        // RETAIL / VAPE SHOP / SERVICES / GROCERY MODE: No Dine-in/Takeout tabs!
+        // Slim, clean collapsible Customer / Reference note
+        <div className="pt-2 shrink-0">
+          {!isOrderInfoExpanded ? (
+            <button
+              type="button"
+              onClick={() => setIsOrderInfoExpanded(true)}
+              className="w-full h-8 px-2.5 rounded-lg bg-slate-50 hover:bg-blue-50/50 border border-slate-200/90 hover:border-blue-200 text-xs flex items-center justify-between text-slate-600 transition active:scale-[0.99] cursor-pointer shadow-2xs"
+              title="Attach optional customer name or transaction note"
+            >
+              <div className="flex items-center gap-1.5 truncate">
+                <User className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                <span className={`truncate text-[11px] font-semibold ${tableLabel ? 'text-slate-800 font-bold' : 'text-slate-400 font-medium'}`}>
+                  {tableLabel ? tableLabel : '+ Customer / Note (optional)'}
+                </span>
+              </div>
+              <ChevronDown className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+            </button>
+          ) : (
+            // Expanded Customer Note Input
+            <div className="p-2.5 bg-slate-50 border border-slate-200 rounded-xl space-y-2 animate-in fade-in duration-150 shadow-2xs">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1">
+                  <User className="w-3 h-3 text-blue-600" />
+                  <span>Customer Name or Note</span>
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setIsOrderInfoExpanded(false)}
+                  className="text-[11px] font-bold text-blue-600 hover:text-blue-700 flex items-center gap-0.5 active:scale-95 cursor-pointer"
+                >
+                  <span>Done</span>
+                  <ChevronUp className="w-3 h-3" />
+                </button>
+              </div>
+              <input
+                type="text"
+                value={tableLabel}
+                onChange={(e) => setTableLabel(e.target.value)}
+                maxLength={40}
+                placeholder="e.g. Suki Customer / Order note..."
+                autoFocus
+                className="w-full h-8 px-2.5 rounded-lg bg-white border border-slate-200 text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Cart Items List */}
       <div className="flex-1 overflow-y-auto py-3 space-y-2 scrollbar-none">
         {items.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-slate-400 text-center p-6">
-            <div className="w-12 h-12 rounded-lg bg-slate-50 flex items-center justify-center mb-2">
-              <ShoppingBag className="w-6 h-6 text-slate-300 stroke-1" />
+            <div className="w-16 h-16 rounded-2xl bg-blue-50/70 border border-blue-100 flex items-center justify-center mb-3 text-blue-500 shadow-2xs">
+              <ShoppingBag className="w-8 h-8 stroke-[1.5]" />
             </div>
-            <p className="font-bold text-slate-700 text-sm">No items in invoice</p>
-            <p className="text-xs text-slate-400 mt-1">
-              Select dishes from the menu to start an order.
+            <p className="font-bold text-slate-800 text-sm">No items in invoice</p>
+            <p className="text-xs text-slate-400 mt-1 max-w-[200px] leading-relaxed">
+              Tap any dish from the catalog or scan a barcode to begin.
             </p>
           </div>
         ) : (
           items.map(({ product, quantity }) => (
             <div
               key={product.id}
-              className="group flex items-center justify-between gap-2.5 p-2 rounded-lg hover:bg-slate-50 transition border border-transparent hover:border-slate-100"
+              className="bg-slate-50/80 hover:bg-slate-50 border border-slate-200/90 rounded-xl p-3 transition space-y-2.5 shadow-2xs"
             >
-              <img
-                src={product.image || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=100&auto=format&fit=crop&q=80'}
-                alt={product.name}
-                className="w-10 h-10 rounded-lg object-cover shrink-0 ring-1 ring-slate-200"
-              />
-
-              <div className="flex-1 min-w-0">
-                <h4 className="font-bold text-xs text-slate-900 truncate leading-snug">
-                  {product.name}
-                </h4>
-                <div className="flex items-center gap-2 mt-1">
-                  {/* Inline Quantity Stepper */}
-                  <div className="flex items-center bg-slate-100 rounded border border-slate-200">
-                    <button
-                      onClick={() => updateQuantity(product.id, quantity - 1)}
-                      className="w-5 h-5 flex items-center justify-center text-slate-500 hover:text-slate-900 hover:bg-slate-200 rounded-l transition active:scale-95"
-                      title="Decrease"
-                    >
-                      <Minus className="w-2.5 h-2.5" />
-                    </button>
-                    <span className="px-1.5 text-[11px] font-bold text-slate-800 min-w-[16px] text-center">
-                      {quantity}
-                    </span>
-                    <button
-                      onClick={() => updateQuantity(product.id, quantity + 1)}
-                      className="w-5 h-5 flex items-center justify-center text-slate-500 hover:text-slate-900 hover:bg-slate-200 rounded-r transition active:scale-95"
-                      title="Increase"
-                    >
-                      <Plus className="w-2.5 h-2.5" />
-                    </button>
+              {/* Top Row: Thumbnail + Full Item Name + Line Total Price */}
+              <div className="flex items-start justify-between gap-2.5">
+                <div className="flex items-start gap-2.5 min-w-0 flex-1">
+                  {/* Offline-Safe Rounded Thumbnail with Fallback Icon */}
+                  <div className="w-9 h-9 rounded-lg bg-white border border-slate-200/90 flex items-center justify-center shrink-0 overflow-hidden relative shadow-2xs">
+                    {product.image && (
+                      <img
+                        src={product.image}
+                        alt=""
+                        onError={(e) => {
+                          (e.target as HTMLElement).style.display = 'none';
+                        }}
+                        className="w-full h-full object-cover"
+                      />
+                    )}
+                    <Utensils className="w-4 h-4 text-slate-300 absolute pointer-events-none -z-0" />
                   </div>
 
-                  <span className="text-[11px] text-slate-400 font-medium">
-                    @{currency}{product.price.toFixed(2)}
-                  </span>
+                  <div className="min-w-0 flex-1">
+                    <h4 className="font-bold text-xs sm:text-sm text-slate-900 leading-snug break-words">
+                      {product.name}
+                    </h4>
+                    <p className="text-[11px] text-slate-400 font-semibold mt-0.5">
+                      {currency}{product.price.toFixed(2)} each
+                    </p>
+                  </div>
                 </div>
-              </div>
 
-              {/* Line Price & Remove Button */}
-              <div className="flex items-center gap-1.5 shrink-0">
-                <span className="text-xs font-black text-slate-900">
+                {/* Line Total */}
+                <span className="text-sm font-black text-slate-900 shrink-0 tracking-tight">
                   {currency}{(product.price * quantity).toFixed(2)}
                 </span>
+              </div>
+
+              {/* Bottom Row: Tactile Quantity Stepper + Remove Trash Button */}
+              <div className="flex items-center justify-between pt-1.5 border-t border-slate-200/60">
+                {/* Stepper with comfortable >= 32px touch buttons */}
+                <div className="inline-flex items-center bg-white rounded-lg border border-slate-200 shadow-2xs">
+                  <button
+                    type="button"
+                    onClick={() => updateQuantity(product.id, quantity - 1)}
+                    className="w-8 h-7 flex items-center justify-center text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-l-lg transition active:scale-90"
+                    title="Decrease quantity"
+                  >
+                    <Minus className="w-3.5 h-3.5 stroke-[2.5]" />
+                  </button>
+                  <span className="px-3 text-xs font-black text-slate-900 min-w-[24px] text-center select-none">
+                    {quantity}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => updateQuantity(product.id, quantity + 1)}
+                    className="w-8 h-7 flex items-center justify-center text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-r-lg transition active:scale-90"
+                    title="Increase quantity"
+                  >
+                    <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
+                  </button>
+                </div>
+
+                {/* Remove item button */}
                 <button
+                  type="button"
                   onClick={() => removeItem(product.id)}
                   className="w-7 h-7 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 flex items-center justify-center transition active:scale-90"
-                  title="Remove item"
+                  title="Remove from invoice"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
                 </button>
@@ -191,8 +380,15 @@ export const CartView: React.FC<CartViewProps> = ({ onOpenCheckout }) => {
         )}
       </div>
 
-      {/* Payment Summary */}
+      {/* Payment Summary (collapsed to a compact total while the cart is empty) */}
       <div className="pt-3 border-t border-slate-200 shrink-0 space-y-2">
+        {items.length === 0 ? (
+          <div className="flex items-center justify-between pb-1">
+            <span className="text-xs font-bold text-slate-400 uppercase tracking-wide">Total</span>
+            <span className="text-base font-black text-slate-300">{currency}0.00</span>
+          </div>
+        ) : (
+        <>
         <div className="flex items-center justify-between">
           <h3 className="font-bold text-xs text-slate-900 tracking-wide uppercase">
             Payment Summary
@@ -309,6 +505,8 @@ export const CartView: React.FC<CartViewProps> = ({ onOpenCheckout }) => {
             );
           })}
         </div>
+        </>
+        )}
 
         {/* Place An Order Button */}
         <button
@@ -320,8 +518,8 @@ export const CartView: React.FC<CartViewProps> = ({ onOpenCheckout }) => {
               : 'bg-blue-600 hover:bg-blue-700 text-white shadow-blue-500/20'
           }`}
         >
-          <span>Place An Order</span>
-          <ArrowRight className="w-4 h-4 stroke-[2.5]" />
+          <span>{items.length === 0 ? 'Add items to order' : 'Place An Order'}</span>
+          {items.length > 0 && <ArrowRight className="w-4 h-4 stroke-[2.5]" />}
         </button>
       </div>
 

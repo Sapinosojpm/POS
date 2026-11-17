@@ -60,11 +60,15 @@ export interface HeldOrder {
   createdAt: number; // timestamp
 }
 
+export type OrderType = 'DINE_IN' | 'TAKEOUT';
+
 export interface Order {
   id: string; // UUIDv4
   orderNumber: string; // e.g. ORD-20261103-0001
   cashierName: string;
   shiftId: string;
+  orderType?: OrderType;
+  tableLabel?: string; // Table number or customer name
   subtotal: number;
   discount: number;
   tax: number;
@@ -113,4 +117,16 @@ export interface StockMovement {
   orderId?: string;
   notes?: string;
   createdAt: number;
+}
+
+export type StaffRole = 'CASHIER' | 'MANAGER' | 'ADMIN';
+
+export interface StaffUser {
+  id: string;
+  name: string;
+  role: StaffRole;
+  pin: string; // 4-digit numeric PIN
+  avatar?: string;
+  color?: string;
+  activeShiftId?: string;
 }

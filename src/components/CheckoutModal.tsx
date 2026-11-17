@@ -5,6 +5,7 @@ import { useSettingsStore } from '../store/useSettingsStore';
 import { db } from '../core/db';
 import { printerService } from '../core/hardware/printer';
 import { toast } from '../store/useToastStore';
+import { useAuthStore } from '../store/useAuthStore';
 import type { Order, OrderItem, PaymentMethod } from '../types';
 
 interface CheckoutModalProps {
@@ -23,17 +24,18 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose, o
     cashierName,
     clearCart,
     currency,
+    orderType,
+    tableLabel,
   } = useCartStore();
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('CASH');
   const [tenderedStr, setTenderedStr] = useState<string>('');
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [completedOrder, setCompletedOrder] = useState<Order | null>(null);
-
-  if (!isOpen) return null;
+  const { settings } = useSettingsStore();
+  const { currentUser } = useAuthStore();
 
   const total = getTotal();
   const breakdown = getDiscountBreakdown();
-  const { settings } = useSettingsStore();
 
   const enabledMethods = settings.enabledPaymentMethods || {
     cash: true,
@@ -60,6 +62,9 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose, o
       setPaymentMethod(optionsToRender[0].id);
     }
   }, [optionsToRender, paymentMethod]);
+
+  // NOTE: Must stay AFTER every hook call (Rules of Hooks).
+  if (!isOpen) return null;
 
   const tendered = parseFloat(tenderedStr) || 0;
   const changeDue = Math.max(0, tendered - total);
@@ -89,11 +94,15 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose, o
       const orderId = `ord-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
       const orderNumber = `ORD-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${Math.floor(1000 + Math.random() * 9000)}`;
 
+      const isDiningEnabled = settings.enableDiningOptions || settings.businessType === 'RESTAURANT';
+
       const newOrder: Order = {
         id: orderId,
         orderNumber,
-        cashierName: cashierName || 'Courtney Henry',
+        cashierName: cashierName || currentUser?.name || 'Cashier',
         shiftId: 'shift-current',
+        orderType: isDiningEnabled ? orderType : undefined,
+        tableLabel: tableLabel.trim() || undefined,
         subtotal: getSubtotal(),
         discount: breakdown.discountAmount,
         discountType: discount?.type,

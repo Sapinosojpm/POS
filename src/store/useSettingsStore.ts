@@ -9,12 +9,16 @@ export interface EnabledPaymentMethods {
   paylater: boolean;
 }
 
+export type BusinessType = 'RETAIL' | 'VAPE_SHOP' | 'RESTAURANT' | 'SERVICES';
+
 export interface StoreSettings {
   storeName: string;
   branchName: string;
   storeAddress: string;
   storePhone: string;
   tin: string;
+  businessType: BusinessType;
+  enableDiningOptions: boolean;
   receiptHeader: string;
   receiptFooter: string;
   currency: string;
@@ -30,13 +34,15 @@ export interface StoreSettings {
 }
 
 const DEFAULT_SETTINGS: StoreSettings = {
-  storeName: 'RESTOE CAFE & BISTRO',
-  branchName: 'Main Branch - BGC',
-  storeAddress: '123 Bonifacio St, Bonifacio Global City, Taguig',
+  storeName: 'UNIVERSAL POS',
+  branchName: 'Main Store',
+  storeAddress: '123 Bonifacio St, Metro Manila',
   storePhone: '+63 917 123 4567',
   tin: '123-456-789-000 VAT',
+  businessType: 'RETAIL',
+  enableDiningOptions: false,
   receiptHeader: 'OFFICIAL RECEIPT',
-  receiptFooter: 'THANK YOU FOR DINING WITH US!\nPLEASE COME AGAIN.',
+  receiptFooter: 'THANK YOU FOR YOUR PURCHASE!\nPLEASE COME AGAIN.',
   currency: '₱',
   currencyCode: 'PHP',
   enableTax: true,
@@ -65,6 +71,11 @@ const loadSavedSettings = (): StoreSettings => {
       return {
         ...DEFAULT_SETTINGS,
         ...parsed,
+        businessType: parsed.businessType || 'RETAIL',
+        enableDiningOptions:
+          parsed.enableDiningOptions !== undefined
+            ? parsed.enableDiningOptions
+            : parsed.businessType === 'RESTAURANT',
         enableTax: parsed.enableTax !== undefined ? parsed.enableTax : true,
         enabledPaymentMethods: {
           ...DEFAULT_SETTINGS.enabledPaymentMethods,

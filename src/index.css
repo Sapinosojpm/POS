@@ -71,3 +71,24 @@
   position: absolute;
   animation: scannerLaser 2.2s infinite ease-in-out;
 }
+
+/* Add-to-cart feedback: quick scale pop on cart badges and cards */
+@keyframes popBump {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.18); }
+  100% { transform: scale(1); }
+}
+.animate-pop {
+  animation: popBump 0.28s ease-out;
+}
+
+/* Invalid PIN Shake Animation */
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-8px); }
+  40%, 80% { transform: translateX(8px); }
+}
+.animate-shake {
+  animation: shake 0.38s ease-in-out;
+}
+

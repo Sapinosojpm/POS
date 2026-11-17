@@ -63,7 +63,7 @@ ${center(receiptTitle)}
 Date: ${dateStr}
 Order No: ${order.orderNumber}
 Cashier:  ${order.cashierName}
-${divider}
+${(order.orderType || order.tableLabel) ? `Order:    ${order.orderType === 'DINE_IN' ? 'DINE-IN' : order.orderType === 'TAKEOUT' ? 'TAKEOUT' : ''}${order.tableLabel ? (order.orderType ? ` (${order.tableLabel})` : order.tableLabel) : ''}\n` : ''}${divider}
 QTY  ITEM                  TOTAL
 `;
 

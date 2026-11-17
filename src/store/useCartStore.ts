@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { Product, CartItem, PaymentMethod, CartDiscount } from '../types';
+import type { Product, CartItem, PaymentMethod, CartDiscount, OrderType } from '../types';
 import { useSettingsStore } from './useSettingsStore';
 
 export interface DiscountBreakdown {
@@ -20,8 +20,12 @@ interface CartState {
   isOnline: boolean;
   currency: string;
   discount: CartDiscount | null;
+  orderType: OrderType;
+  tableLabel: string;
 
   // Actions
+  setOrderType: (type: OrderType) => void;
+  setTableLabel: (label: string) => void;
   addItem: (product: Product) => void;
   removeItem: (productId: string) => void;
   updateQuantity: (productId: string, quantity: number) => void;
@@ -51,6 +55,11 @@ export const useCartStore = create<CartState>((set, get) => ({
   isOnline: navigator.onLine,
   currency: '₱',
   discount: null,
+  orderType: 'DINE_IN',
+  tableLabel: '',
+
+  setOrderType: (orderType: OrderType) => set({ orderType }),
+  setTableLabel: (tableLabel: string) => set({ tableLabel }),
 
   addItem: (product: Product) => {
     set((state) => {
@@ -83,7 +92,7 @@ export const useCartStore = create<CartState>((set, get) => ({
   },
 
   clearCart: () => {
-    set({ items: [], amountTendered: 0, paymentMethod: 'CASH', discount: null });
+    set({ items: [], amountTendered: 0, paymentMethod: 'CASH', discount: null, orderType: 'DINE_IN', tableLabel: '' });
   },
 
   setPaymentMethod: (paymentMethod: PaymentMethod) => set({ paymentMethod }),

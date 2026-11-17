@@ -381,6 +381,34 @@ A modern, touch-optimized, **offline-first hybrid Point of Sale (POS)** designed
   - [ ] Clicked column header displays an active accent color (`text-blue-600`) and the active sort indicator.
   - [ ] Search and payment method filters remain fully intact while switching sort orders.
 
+### 3.13. Tablet Adaptive Layout & Dual-Orientation Rotation Engine (Landscape & Portrait)
+- **Feature Title:** Tablet Adaptive Layout & 360° Sensor-Driven Dual-Orientation Engine
+- **Target Personas:**
+  - **Counter Cashier / Waitstaff (Tablet on Counter Stand / Swivel Base):** Operates in wide **Landscape** orientation with fixed side-by-side product catalog and right-hand invoice panel.
+  - **Mobile Server / Floor Attendant (Handheld Tablet):** Operates in **Portrait** orientation while walking tables or using compact 7"–10" tablets (Samsung Galaxy Tab, Sunmi handheld, iPad Mini).
+- **User Stories:**
+  - *As a Cashier*, I want the app to seamlessly rotate between Landscape and Portrait when I physically turn the tablet, preserving all active cart items, discounts, and searches without reloading.
+  - *As a Handheld Server in Portrait mode*, I want the product catalog to take full comfortable width (2-column dish grid) and display a sticky floating bottom cart bar (`🛒 3 Items • ₱450.00 | View Cart & Pay →`), so I can ring up items with one hand and tap to open the cart drawer when ready to checkout.
+  - *As a Counter Cashier in Landscape mode*, I want the classic 3-pane layout (Slim sidebar rail, central menu catalog, and permanent right-side invoice panel) without wasted screen margins.
+- **Functional Requirements:**
+  1. **Android Manifest & Sensor Rotation:**
+     - Configure `android:screenOrientation="fullSensor"` in `AndroidManifest.xml` to allow 360° rotation (Portrait, Landscape, Reverse Portrait, Reverse Landscape).
+  2. **Responsive Layout Engine:**
+     - **Landscape Viewport (`@media (orientation: landscape)` / `lg:flex-row`):**
+       - Persistent 3-column layout: Left sidebar rail (`84px`), Center product catalog (`flex-1`), Right invoice panel (`w-80` to `w-[350px]`).
+     - **Portrait Viewport (`@media (orientation: portrait)` / `< lg` screens):**
+       - Product Catalog expands to comfortable full width (2-column dish grid) with zero side compression.
+       - Floating Bottom Cart Dock (`[🛒 N Items • Total] [View Cart / Pay →]`) dynamically appears whenever cart items > 0.
+       - CartView slides up as an interactive bottom sheet drawer or overlay modal with smooth backdrop and quick close/collapse button.
+       - Top header elements (search bar, camera scanner, gun indicator, held orders badge) scale gracefully without horizontal scroll or overflow clipping.
+  3. **State Preservation Across Orientation Changes:**
+     - Device orientation changes trigger zero re-mounts of state stores; active cart items, applied discounts, customer names, search filters, and held order counts remain 100% intact.
+- **Acceptance Criteria:**
+  - [ ] Tablet freely rotates between Landscape and Portrait without app crashes or cart state resets.
+  - [ ] In Landscape mode, Catalog and Cart are permanently visible side-by-side.
+  - [ ] In Portrait mode, Catalog spans full width without horizontal squishing, and Cart is accessible via a high-visibility floating bottom dock and slide-up drawer.
+  - [ ] All interactive buttons and touch targets strictly maintain the >= 48px touch constraint across both orientations.
+
 ---
 
 ## 4. Non-Functional Requirements

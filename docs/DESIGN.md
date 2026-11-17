@@ -206,6 +206,23 @@ The viewport is divided into three primary zones in a landscape tablet/desktop v
     - Active Ascending: `ArrowUp` in `w-3 h-3 text-blue-600 stroke-[2.5]`.
     - Active Descending: `ArrowDown` in `w-3 h-3 text-blue-600 stroke-[2.5]`.
 
+### 3.12. Tablet Dual-Orientation Tokens & Portrait Floating Cart Dock
+- **Landscape Layout (`lg:` / 1024px+ wide):**
+  - 3-Column Split: Sidebar (`84px`), Product Catalog (`flex-1`), and CartView (`w-80` to `w-[350px]`) side-by-side.
+  - Category Carousel: 2 rows of category cards flowing horizontally.
+  - Product Grid: 3 columns (`grid-cols-1 sm:grid-cols-2 lg:grid-cols-3`).
+- **Portrait Layout (`< lg` / 768px–1024px tall):**
+  - Sidebar: Compact vertical icon rail (`w-16` or `w-[72px]`) or bottom bar.
+  - Product Catalog: Takes full width with 2-column card grid (`grid-cols-2 gap-3`), ensuring dish cards remain large and legible with big touch targets.
+  - Floating Bottom Cart Dock:
+    - Sticky bottom bar: `fixed bottom-4 left-20 right-4 sm:left-24 z-40 bg-slate-900 text-white rounded-2xl p-3.5 shadow-2xl flex items-center justify-between border border-slate-800`.
+    - Left side: Shopping bag icon in blue pill (`w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white`), item count, and gross total.
+    - Right side: High-contrast primary action button: `[View Invoice / Checkout →]` (`bg-blue-600 hover:bg-blue-500 text-white font-bold px-4 py-2 rounded-xl text-xs flex items-center gap-1.5 active:scale-95`).
+  - Slide-Up Cart Drawer (Portrait):
+    - Overlay modal/drawer with backdrop (`bg-slate-900/60 backdrop-blur-xs z-50 fixed inset-0 flex justify-end`).
+    - Sliding panel: `w-full max-w-md bg-white h-full shadow-2xl animate-in slide-in-from-right duration-200 flex flex-col`.
+    - Header includes a dedicated `[✕ Close]` button to easily return to browsing menu dishes.
+
 ---
 
 ## 4. Skeleton Loading Patterns (Zero-Latency Perceived Performance)

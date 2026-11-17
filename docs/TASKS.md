@@ -99,6 +99,55 @@
 - [x] Implement client-side memoized sort comparator seamlessly preserving search terms and payment filters.
 - [x] Verify build with `npm run build` and sync assets to Android via `npx cap sync`.
 
+## Phase 4.12: Tablet Adaptive Layout & Dual-Orientation Rotation Engine (PRD 3.13)
+- [x] Update `AndroidManifest.xml` with `android:screenOrientation="fullSensor"` to enable 360° hardware sensor rotation.
+- [x] Build Floating Bottom Cart Dock (`[🛒 N Items • Total] [View Invoice / Pay →]`) in `App.tsx` visible in portrait viewports.
+- [x] Build Slide-Up / Overlay Cart Drawer with backdrop and close button for portrait tablet orientation.
+- [x] Optimize `ProductCatalog.tsx` grid and spacing to comfortably display 2-column dish cards in portrait mode and 3-column in landscape.
+- [x] Optimize `Header.tsx` and `Sidebar.tsx` touch rail for tablet portrait width (prevent overflow and maintain >= 48px touch targets).
+- [x] Verify build with `npm run build`, sync to Capacitor Android via `npx cap sync`, and compile updated debug APK via `npm run build:apk`.
+
+## Phase 4.13: POS Catalog & Invoice UX Overhaul & Mobile Bottom Navigation (PRD 3.14)
+- [x] Sticky single-row horizontal scrolling category chips with total counts and active gradient styling.
+- [x] Prevent category name truncation with clean dynamic layout.
+- [x] Clean, informative status badges in Header (`Online`, `Offline · N queued`, and 1.8s `Scanned` flash indicator).
+- [x] Clear icon labels in navigation sidebar and mobile bottom tab navigation (`BottomNav.tsx`) for phones/portrait screens.
+- [x] Out-of-Stock and Low-Stock badges on catalog cards with tap protection when sold out.
+- [x] Dine-in vs. Takeout segmented switcher in cart invoice with table / customer name field.
+- [x] Collapsed payment summary when cart is empty (hiding ₱0.00 buttons until dishes are added).
+- [x] Tactile `.animate-pop` button feedback when adding dishes to cart.
+- [x] Menu sorting selector (`Featured`, `Best Sellers`, `Name A-Z`, `Price: Low to High`, `Price: High to Low`).
+- [x] Gradient avatar fallback with dish initials for missing or offline image URLs (e.g. Pasta Bolognese).
+- [x] Remove redundant currency pill from tablet header (configured in Settings).
+- [x] Fix React StrictMode double-mount seed collision with singleton re-entrancy lock and Dexie readwrite transaction.
+- [x] Fix React Rules of Hooks crash in `CheckoutModal.tsx` by hoisting all hook invocations before conditional returns.
+- [x] Universal POS Business Profile Engine (`useSettingsStore.ts` & `SettingsView.tsx`):
+  - Added `businessType`: `'RETAIL' | 'VAPE_SHOP' | 'RESTAURANT' | 'SERVICES'`.
+  - Added `enableDiningOptions` toggle switch: auto-configured by business type (enabled for Restaurant, disabled for Retail/Vape/Services) with full user override.
+- [x] Collapsible Order Context & Invoice Layout in `CartView.tsx`:
+  - When Dining Options are disabled (Retail, Vape shop, Grocery): Hides Dine-in/Takeout tabs completely; provides an ultra-slim collapsible `+ Customer / Note` action.
+  - When Dining Options are enabled (Restaurant): Collapses Dine-in/Takeout & Table # into a sleek 32px pill (`🍽️ Dine-in • Table 4 ⌵`), expanding only when tapped to save maximum vertical space for items.
+- [x] Dual-Sidebar Collapsible System for Small Tablets (PRD 3.14):
+  - **Left Navigation Sidebar:** Added collapse button `[ ⇤ ]` on sidebar and hamburger button `[ ☰ ]` in `Header.tsx` to completely hide the navigation rail, gaining +84px width.
+  - **Right Invoice Sidebar:** Added prominent `[ ⇥ Hide ]` button on invoice header to collapse the invoice panel, gaining +320px width for a 100% full-screen product catalog, with a quick floating dock pill `[ 🛒 N Items • Total ➔ Open Invoice ]` to restore it anytime.
+  - **Big Cards / Density View Toggle:** Added `[ ⊞ Big Cards | ▦ Grid ]` selector in `ProductCatalog.tsx` toolbar so small tablet cashiers can view large product photos, large dish titles, and bigger touch buttons.
+- [x] Update thermal receipt printer bridge to conditionally format order type and notes only when present.
+- [x] Verify production build (`npm run build`) and sync assets with `npx cap sync`.
+
+## Phase 4.14: Cashier & Staff PIN Authentication Gate (PRD 3.15)
+- [x] Implement `useAuthStore.ts` managing `StaffUser` roles (`CASHIER`, `MANAGER`, `ADMIN`), 4-digit numeric PIN authentication, and local session persistence.
+- [x] Build standalone modern terminal lock/login screen (`LoginView.tsx`):
+  - Branded store header with live terminal digital clock.
+  - Staff profile list with real-time active indicators.
+  - 4-digit animated PIN dots with shake animation on invalid attempts.
+  - High-tactile on-screen 3x4 numeric keypad with audio feedback + physical keyboard/scanner support.
+  - 1-tap demo quick logins for Courtney (1111), Alexander (2222), and Manager (1234).
+- [x] Wire authentication gate into `App.tsx` preventing unauthorized access before PIN verification.
+- [x] Connect `Sidebar.tsx` and `Header.tsx` logout triggers to lock the terminal instantly.
+- [x] Make cashier avatar and order attribution dynamic across `Header.tsx` and `CheckoutModal.tsx`.
+- [x] Add "Staff Accounts & PIN Access" tab to `SettingsView.tsx` for adding, viewing, and managing cashiers.
+- [x] Verify production build (`npm run build`) and sync assets to Capacitor Android (`npx cap sync`).
+
 ## Phase 5: PostgreSQL Backend Infrastructure & Sync Gateway
 - [x] Create PostgreSQL schema `sql/postgres_schema.sql` defining relational tables (`branches`, `devices`, `categories`, `products`, `orders`, `order_items`, `shifts`, `stock_ledger`) with UUID keys, indexes, and updated_at triggers.
 - [x] Implement standalone Node.js sync server (`server/index.mjs`) implementing `POST /api/sync/push` (batch idempotent PostgreSQL upserts) and `GET /api/sync/pull` (delta changes since timestamp).

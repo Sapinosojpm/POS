@@ -68,6 +68,63 @@
   - **Dual Controls:** Synchronized Quick Sort dropdown in the toolbar (tablet-friendly) and clickable `<th>` table headers with active visual indicators (`ArrowUpDown`, `ArrowUp`, `ArrowDown`, `text-blue-600`).
   - **Performance:** Client-side memoized sorting executed in <5ms without re-querying IndexedDB or resetting active filters.
 
+- **Standalone Android Tablet APK Package (Capacitor 7):**
+  - Compiled using Android Studio JBR and Gradle 8.11 (`assembleDebug`).
+  - Target Android SDK: Platform 35 / Build-Tools 34.
+  - Output binary: `build-apk/Universal_POS_v1.0.apk` (~4.94 MB).
+  - Standalone, offline-ready APK directly installable on any Android tablet, handheld POS, or smartphone without Play Store requirements.
+
+- **Tablet Adaptive Layout & 360° Dual-Orientation (Phase 4.12):**
+  - `android:screenOrientation="fullSensor"` enabled in `AndroidManifest.xml` for seamless physical sensor rotation.
+  - **Landscape Mode (`>= lg`):** Permanent 3-pane layout with sidebar rail, 3-column dish grid catalog, and docked right-hand invoice panel.
+  - **Portrait Mode (`< lg`):** Spacious 2-column dish grid catalog with floating bottom cart dock (`[🛒 N Items • Total] [Review Order →]`) and slide-up interactive cart drawer.
+  - Cart items, totals, and active searches persist across orientation shifts without state loss.
+
+- **Invoice Panel & Cart UX Polish (Phase 4.12 Follow-up):**
+  - **Structured Ticket Cards:** Overhauled cart item layout into dedicated cards (`bg-slate-50/80 border border-slate-200/90 rounded-xl p-3`). Top row displays full non-truncated dish name, unit price, and total line price.
+  - **High-Tactile Steppers:** Enlarged `[-] qty [+]` touch buttons (`w-8 h-7`) and trash remove icon (`w-7 h-7`), eliminating cramped 20px buttons.
+  - **Offline-Safe Image Fallback:** Eliminated broken-image icons and wrapped thumbnails with graceful fallback (`Utensils` icon container with auto-hidden broken image tags) across Cart items, Product Catalog cards, and Category tabs.
+  - **Grammar & Badge Alignment:** Corrected "1 Items" to "1 Item" and streamlined Hold/Clear buttons in the invoice header.
+
+- **POS Catalog & Invoice UX Overhaul & Mobile Navigation (Phase 4.13):**
+  - **Single-Row Category Chips:** Replaced cramped 2-row category grid with smooth horizontally scrollable category chips with product counts and active blue styling.
+  - **Mobile Bottom Navigation (`BottomNav.tsx`):** Added ergonomic bottom navigation bar for phones/portrait screens (< md) while keeping the vertical sidebar for tablets and desktop (>= md).
+  - **Order Type Switcher:** Added segmented toggle (`Dine-in` / `Takeout`) and optional Table # / Customer Name input to the invoice header, persisted into order payload and thermal receipts.
+  - **Conditional Payment Summary:** Automatically hides the payment summary and ₱0.00 buttons when cart is empty, showing a welcoming empty-cart illustration instead.
+  - **Stock Protection Badges:** Added "Sold Out" (disabled tap) and "Low Stock (N left)" pill badges on dish cards to prevent accidental over-ordering.
+  - **Tactile Feedback:** Added `.animate-pop` CSS pulse and quick button feedback when dishes are added to the cart or scanned.
+  - **Menu Sorting Selector:** Quick sorting dropdown (`Featured`, `Best Sellers`, `Name A-Z`, `Price: Low to High`, `Price: High to Low`) in catalog header.
+  - **Deterministic Initial Avatar Fallbacks:** Colorful gradient avatars based on product name when images fail or are missing offline.
+  - **Streamlined Header:** Cleaned up redundant currency pill in header (already manageable in Settings), upgraded sync status with human-friendly descriptions (`Online`, `Offline · N queued`), and added a 1.8s `Scanned` confirmation flash when a barcode is captured.
+  - **React Stability:** Fixed double-mount race conditions in `seed.ts` via singleton re-entrancy lock and atomic transactions; fixed conditional hook crash in `CheckoutModal.tsx`.
+  - **User Constraint Observed:** APK compilation deferred ("wag mo muna gawin ang apk") pending user instruction.
+
+- **Universal POS Business Modes & Collapsible Invoice Context (Phase 4.13 Follow-up):**
+  - **User Feedback Addressed:** "why have take out and dine this is universal pos na pwede kahit saan like vapeshop , grocery store at iba and lagay mo nalang sa settings kung anong type ang pos na gusto nila... pwede ba tong collapsesable"
+  - **Business Profiles in Settings:** Added `businessType` selector cards (`Retail & Grocery`, `Vape Shop & Specialty`, `Restaurant & Cafe`, `Services & Salon`) plus an explicit toggle switch `enableDiningOptions: boolean`.
+  - **Default Setting:** Defaults to `RETAIL` with `enableDiningOptions: false` so vape shops, grocery stores, and general retail stores have a clean, counter-sales screen with zero dining clutter.
+  - **Collapsible Invoice Section in `CartView.tsx`:**
+    - For Restaurants (when dining options are active): Collapses the Dine-in / Takeout tabs and Table # input into a sleek 32px pill bar (`🍽️ Dine-in • Table 4 ⌵`), expanding only when tapped. This saves ~50px of vertical height for invoice items.
+    - For Retail / Vape Shop / Grocery (when dining options are inactive): Completely removes the Dine-in / Takeout tabs; provides a subtle, 1-line `+ Customer / Note (optional)` trigger that takes minimal space.
+  - **Dual Collapsible Sidebars for Small Tablets (7" to 10" Tablets):**
+    - Cashiers on small tablets can now collapse BOTH sidebars:
+      - Left Nav Sidebar: Toggled via `[ ⇤ ]` on sidebar or `[ ☰ ]` hamburger in header (+84px width).
+      - Right Invoice Sidebar: Toggled via prominent `[ ⇥ Hide ]` button on invoice (+320px width).
+      - Total horizontal gain: +404px, yielding a 100% full-screen product catalog!
+    - **Big Cards Mode (`ProductCatalog.tsx`):** Added a `[ ⊞ Big Cards | ▦ Grid ]` toggle in the menu toolbar. Switches from 3-4 cramped columns into 2 extra-large columns with huge photos, large dish titles, and big touch buttons tailored for small tablet screens.
+  - **Thermal Receipts:** Dynamically includes order type and table/customer note only when present; suppresses empty tags for standard retail receipts.
+
+- **Cashier & Staff PIN Authentication Gate (Phase 4.14):**
+  - **Terminal Lock Screen (`LoginView.tsx`):** All users must enter a 4-digit PIN before accessing the POS catalog, orders, and settings.
+  - **Dual-Mode Entry:** Cashiers can type their 4-digit PIN directly (auto-identifying who logged in) or select their staff profile first.
+  - **Default Accounts & Demo Fallbacks:**
+    - Courtney Henry (Cashier): PIN `1111`
+    - Alexander Wright (Cashier): PIN `2222`
+    - Store Manager (Manager): PIN `1234`
+  - **Dynamic Cashier Attribution:** Checkout orders and receipts now record the authenticated cashier's name instead of static strings.
+  - **Lock & Logout Workflows:** Tapping logout in the left sidebar or the header cashier avatar immediately locks the terminal and returns to the PIN screen.
+  - **Staff Management in Settings:** Added dedicated "Staff Accounts & PIN Access" tab under SettingsView for registering new staff, changing PINs, and setting roles (`CASHIER`, `MANAGER`).
+
 ## Target Personas
 1. **Micro / Solo User:** Standalone Android tablet running the **`.apk`** with no continuous internet. Daily operations and Z-reports are 100% self-contained on the device.
 2. **Medium Business:** Multiple terminals (desktops + tablets) syncing through a centralized cloud backend with role-based cashier PINs and branch management.
