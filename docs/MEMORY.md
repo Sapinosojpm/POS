@@ -143,6 +143,25 @@
   - **Thermal Printing:**
     - Receipts for voided transactions print with a bold `*** VOID RECEIPT ***` header, manager approval name, timestamp, and cancellation banner.
 
+- **Real-Time Data-Driven Dashboard Engine (Phase 4.16):**
+  - **User Feedback Addressed:** "itugma mo ito sa data make this better" with screenshot of localhost:3000 Dashboard showing static mock values.
+  - **Data Integration:** Switched `ReportsView.tsx` from static mock numbers to live reactive IndexedDB queries via `useLiveQuery(() => db.orders, db.orderItems, db.products)`.
+  - **Dynamic Period Engine:** Supports `Today`, `This Week`, `This Month`, `This Year`, and `All Time` with automatic time-series bucket resolution (hourly, daily, or monthly).
+  - **KPIs & Growth:**
+    - Gross Sales dynamically sums non-voided completed orders.
+    - Cancelled / Voided transactions shown explicitly as an audit metric.
+    - Average Ticket Value (ATV) calculated dynamically.
+    - Catalog performance reflects live product count and in-stock quantities.
+  - **Interactive Visualizations:**
+    - Bar chart tracks relative bucket fill percentages against the peak sales volume.
+    - Spline wave curve calculates the exact peak revenue point and dynamically positions the peak callout badge.
+    - Donut chart computes live percentage arc slices and totals for Cash, E-Wallets (GCash/Maya), and Cards.
+  - **Product Performance & CSV Export:**
+    - "Product" tab aggregates units sold and gross revenue directly from `db.orderItems`.
+    - 1-click "Export CSV" generates real downloadable `.csv` sales report.
+  - **Cohesive Seed Orders:**
+    - Seeded realistic demo orders in `seed.ts` linking real products (`Grilled Steak`, `Pasta Bolognese`, `Spicy Fried Chicken`, `Iced Lemon Tea`) so fresh databases immediately display rich, cohesive metrics.
+
 ## Target Personas
 1. **Micro / Solo User:** Standalone Android tablet running the **`.apk`** with no continuous internet. Daily operations and Z-reports are 100% self-contained on the device.
 2. **Medium Business:** Multiple terminals (desktops + tablets) syncing through a centralized cloud backend with role-based cashier PINs and branch management.

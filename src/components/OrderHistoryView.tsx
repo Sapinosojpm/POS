@@ -217,7 +217,7 @@ export const OrderHistoryView: React.FC = () => {
         };
       });
 
-      setOrders([...mappedDbOrders, ...MOCK_ORDERS]);
+      setOrders(mappedDbOrders.length > 0 ? mappedDbOrders : MOCK_ORDERS);
     } catch (err) {
       console.error('Failed to load orders:', err);
     } finally {

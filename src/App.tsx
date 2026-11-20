@@ -343,7 +343,7 @@ export function App() {
       ) : activeTab === 'calendar' ? (
         <ShiftScheduleView />
       ) : activeTab === 'analytics' ? (
-        <ReportsView />
+        <ReportsView onNavigate={setActiveTab} />
       ) : activeTab === 'settings' ? (
         <SettingsView />
       ) : (

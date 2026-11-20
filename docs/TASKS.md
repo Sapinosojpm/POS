@@ -163,6 +163,18 @@
 - [x] Update ESC/POS thermal printer generator (`printer.ts`) with dedicated `*** VOID RECEIPT ***` layout.
 - [x] Verify production build (`npm run build`) and sync assets to Capacitor Android (`npx cap sync`).
 
+## Phase 4.16: Real-Time Data-Driven Dashboard & Analytics Engine
+- [x] Refactor `ReportsView.tsx` from static mock values into a 100% reactive, live Dexie query engine (`useLiveQuery`).
+- [x] Dynamic period selector (`Today`, `This Week`, `This Month`, `This Year`, `All Time`) filtering live orders and items.
+- [x] Dynamic Core KPIs: Gross Sales, Order Volume, Cancelled/Voided subtractions, Average Ticket Value (ATV), and real product catalog asset counts.
+- [x] Dynamic Bar Chart ("Overall Sales Acquisition"): Real time-series buckets (hourly for Today, 7-day for This Week, 12-month for Month/Year) with relative percentage fills.
+- [x] Dynamic Spline Wave Curve ("Overall Sales Activity"): Smooth SVG curve automatically pinpointing peak sales time, peak value tooltip callout, and average ticket volume.
+- [x] Dynamic Donut Chart ("Channel & Payment Share"): Real percentage distribution and amounts for Cash, GCash/Maya E-Wallets, and Cards.
+- [x] Dynamic Recent Transactions Table with status pills (`COMPLETED` / `VOIDED`) and direct navigation to Order History.
+- [x] Dynamic "Product" Tab with top-selling menu items aggregated from `orderItems` and real CSV report download export.
+- [x] Seed realistic demo orders and order items in `seed.ts` if empty so fresh devices have immediate cohesive data.
+- [x] Verify production build (`npm run build`) and sync assets with `npx cap sync`.
+
 ## Phase 5: PostgreSQL Backend Infrastructure & Sync Gateway
 - [x] Create PostgreSQL schema `sql/postgres_schema.sql` defining relational tables (`branches`, `devices`, `categories`, `products`, `orders`, `order_items`, `shifts`, `stock_ledger`) with UUID keys, indexes, and updated_at triggers.
 - [x] Implement standalone Node.js sync server (`server/index.mjs`) implementing `POST /api/sync/push` (batch idempotent PostgreSQL upserts) and `GET /api/sync/pull` (delta changes since timestamp).
