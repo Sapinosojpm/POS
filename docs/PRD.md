@@ -409,6 +409,23 @@ A modern, touch-optimized, **offline-first hybrid Point of Sale (POS)** designed
   - [ ] In Portrait mode, Catalog spans full width without horizontal squishing, and Cart is accessible via a high-visibility floating bottom dock and slide-up drawer.
   - [ ] All interactive buttons and touch targets strictly maintain the >= 48px touch constraint across both orientations.
 
+### 3.14. Void / Refund / Cancel Transaction with Manager Approval
+- **Feature Title:** Void / Refund & Order Cancellation with Manager PIN Security Gate
+- **Target Personas:** Cashiers, Floor Supervisors, and Store Managers handling punch errors, incorrect payment tenders, customer cancellations, or defective item returns.
+- **Problem Statement:** After a checkout completes, transactions cannot simply be deleted by cashiers (prevents cash theft and inventory distortion). The store requires a traceable manager approval flow that securely restores inventory and adjusts shift balances.
+- **Functional Requirements:**
+  1. **Manager PIN Security Gate:** Cashiers cannot void transactions independently. A dedicated 4-digit Manager PIN modal verifies the credentials against the store settings (`settings.managerPin`, default `1234`) or any configured staff user with `MANAGER` / `ADMIN` role.
+  2. **Standardized Reason Tracking:** Requires selection of an auditable reason ("Cashier Punch Error", "Wrong Payment Method", "Customer Cancellation", "Defective/Returned Product", "Dispute") plus optional free-text explanation.
+  3. **Automatic Inventory Stock Restoral:** Automatically replenishes product stock (`product.stock + qty`) and creates a traceable `stockLedger` movement record with reason `VOID`.
+  4. **Active Shift Drawer Balancing:** If the voided order was transacted in the currently active open shift, automatically deducts the voided amount from cash or non-cash shift totals to keep end-of-day drawer counts exact.
+  5. **Audit Trail & Dedicated Void Receipt:** Prints a customized thermal receipt clearly marked `*** VOID RECEIPT ***` and `*** TRANSACTION VOIDED ***` stating the reason, authorizing manager, and cancellation timestamp.
+  6. **Order History Filter Tabs:** Quick filter tabs (`All`, `Completed`, `Voided`) to audit all voided sales at a glance.
+- **Acceptance Criteria:**
+  - [x] Void button prompts for a 4-digit Manager PIN; unauthorized PINs trigger error shake and sound.
+  - [x] Voided orders immediately change status to `VOIDED` with red badge and reason in Order History.
+  - [x] Quantities are credited back into Dexie `products` inventory and recorded in `stockLedger`.
+  - [x] Thermal printer generates a void slip with manager name and reason.
+
 ---
 
 ## 4. Non-Functional Requirements

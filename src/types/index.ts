@@ -84,6 +84,9 @@ export interface Order {
   status: 'COMPLETED' | 'VOIDED' | 'REFUNDED';
   createdAt: number; // timestamp
   synced: boolean;
+  voidReason?: string;
+  voidedAt?: number;
+  voidedBy?: string;
 }
 
 export interface Shift {

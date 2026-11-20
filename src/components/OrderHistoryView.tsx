@@ -16,6 +16,8 @@ import {
   ArrowUp,
   ArrowDown,
   ChevronDown,
+  RotateCcw,
+  AlertTriangle,
 } from 'lucide-react';
 import { db } from '../core/db';
 import { useCartStore } from '../store/useCartStore';
@@ -23,6 +25,7 @@ import { printerService } from '../core/hardware/printer';
 import { toast } from '../store/useToastStore';
 import type { Order, OrderItem, PaymentMethod } from '../types';
 import { TableRowSkeleton } from './Skeleton';
+import { VoidOrderModal } from './VoidOrderModal';
 
 export type OrderSortField = 'createdAt' | 'total' | 'orderNumber' | 'cashierName';
 export type SortDirection = 'asc' | 'desc';
@@ -37,8 +40,9 @@ export const OrderHistoryView: React.FC = () => {
   const [orders, setOrders] = useState<OrderWithItems[]>([]);
   const [search, setSearch] = useState('');
   const [paymentFilter, setPaymentFilter] = useState<'ALL' | PaymentMethod>('ALL');
-  const [statusFilter] = useState<'ALL' | 'COMPLETED' | 'VOIDED'>('ALL');
+  const [statusFilter, setStatusFilter] = useState<'ALL' | 'COMPLETED' | 'VOIDED'>('ALL');
   const [selectedOrder, setSelectedOrder] = useState<OrderWithItems | null>(null);
+  const [orderToVoid, setOrderToVoid] = useState<OrderWithItems | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [sortField, setSortField] = useState<OrderSortField>('createdAt');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
@@ -410,7 +414,7 @@ export const OrderHistoryView: React.FC = () => {
       </div>
 
       {/* Filter and Search Bar */}
-      <div className="bg-white p-3 rounded-xl border border-slate-200 shadow-sm mb-4 shrink-0 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+      <div className="bg-white p-3 rounded-xl border border-slate-200 shadow-sm mb-4 shrink-0 flex flex-col xl:flex-row items-stretch xl:items-center justify-between gap-3">
         {/* Search */}
         <div className="relative flex-1 max-w-md">
           <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
@@ -431,8 +435,58 @@ export const OrderHistoryView: React.FC = () => {
           )}
         </div>
 
-        {/* Payment Filter Pills & Quick Sort Dropdown */}
+        {/* Status Tabs, Payment Filter Pills & Quick Sort Dropdown */}
         <div className="flex flex-wrap items-center gap-2">
+          {/* Status Filter Tabs (ALL / COMPLETED / VOIDED) */}
+          <div className="flex items-center gap-1 p-1 bg-slate-100/90 rounded-lg">
+            <button
+              type="button"
+              onClick={() => setStatusFilter('ALL')}
+              className={`px-2.5 py-1 rounded-md text-xs font-bold transition flex items-center gap-1.5 ${
+                statusFilter === 'ALL'
+                  ? 'bg-white text-slate-900 shadow-2xs'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <span>All</span>
+              <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-slate-200/80 text-slate-700 font-bold">
+                {orders.length}
+              </span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setStatusFilter('COMPLETED')}
+              className={`px-2.5 py-1 rounded-md text-xs font-bold transition flex items-center gap-1.5 ${
+                statusFilter === 'COMPLETED'
+                  ? 'bg-white text-emerald-700 shadow-2xs'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+              <span>Completed</span>
+              <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-emerald-100 text-emerald-800 font-bold">
+                {orders.filter((o) => o.status === 'COMPLETED').length}
+              </span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setStatusFilter('VOIDED')}
+              className={`px-2.5 py-1 rounded-md text-xs font-bold transition flex items-center gap-1.5 ${
+                statusFilter === 'VOIDED'
+                  ? 'bg-white text-rose-700 shadow-2xs'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <AlertCircle className="w-3 h-3 text-rose-600" />
+              <span>Voided</span>
+              <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-rose-100 text-rose-800 font-bold">
+                {orders.filter((o) => o.status === 'VOIDED').length}
+              </span>
+            </button>
+          </div>
+
+          <div className="h-6 w-px bg-slate-200 hidden sm:block" />
+
           {/* Payment Filter Pills */}
           <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none">
             {(['ALL', 'CASH', 'GCASH', 'MAYA', 'CARD'] as const).map((method) => {
@@ -441,9 +495,9 @@ export const OrderHistoryView: React.FC = () => {
                 <button
                   key={method}
                   onClick={() => handlePaymentFilterChange(method)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap active:scale-95 ${
+                  className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap active:scale-95 ${
                     isSelected
-                      ? 'bg-blue-600 text-white shadow-xs'
+                      ? 'bg-blue-600 text-white shadow-2xs'
                       : 'bg-slate-100 text-slate-600 hover:bg-slate-200 hover:text-slate-900'
                   }`}
                 >
@@ -608,20 +662,27 @@ export const OrderHistoryView: React.FC = () => {
 
                       {/* Status */}
                       <td className="py-3 px-3">
-                        <span
-                          className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold ${
-                            ord.status === 'COMPLETED'
-                              ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                              : 'bg-rose-50 text-rose-700 border border-rose-200'
-                          }`}
-                        >
-                          {ord.status === 'COMPLETED' ? (
-                            <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                          ) : (
-                            <AlertCircle className="w-3 h-3 text-rose-600" />
+                        <div className="flex flex-col gap-0.5">
+                          <span
+                            className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold ${
+                              ord.status === 'COMPLETED'
+                                ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                                : 'bg-rose-50 text-rose-700 border border-rose-200'
+                            }`}
+                          >
+                            {ord.status === 'COMPLETED' ? (
+                              <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                            ) : (
+                              <AlertCircle className="w-3 h-3 text-rose-600" />
+                            )}
+                            <span>{ord.status}</span>
+                          </span>
+                          {ord.status === 'VOIDED' && ord.voidReason && (
+                            <span className="text-[10px] text-slate-400 truncate max-w-[150px]" title={ord.voidReason}>
+                              {ord.voidReason}
+                            </span>
                           )}
-                          <span>{ord.status}</span>
-                        </span>
+                        </div>
                       </td>
 
                       {/* Actions */}
@@ -637,10 +698,19 @@ export const OrderHistoryView: React.FC = () => {
                           <button
                             onClick={() => handleReprintReceipt(ord)}
                             className="p-1.5 rounded-lg text-slate-500 hover:text-emerald-600 hover:bg-emerald-50 transition"
-                            title="Reprint Thermal Receipt"
+                            title={ord.status === 'VOIDED' ? 'Print Void Slip' : 'Reprint Thermal Receipt'}
                           >
                             <Printer className="w-4 h-4" />
                           </button>
+                          {ord.status !== 'VOIDED' && (
+                            <button
+                              onClick={() => setOrderToVoid(ord)}
+                              className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition"
+                              title="Void / Cancel Order (Manager PIN Required)"
+                            >
+                              <RotateCcw className="w-4 h-4" />
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -700,14 +770,48 @@ export const OrderHistoryView: React.FC = () => {
               </div>
             </div>
 
+            {/* Void Status Alert Banner */}
+            {selectedOrder.status === 'VOIDED' && (
+              <div className="bg-rose-50 border border-rose-200 rounded-xl p-3 my-2 space-y-1">
+                <div className="flex items-center gap-1.5 text-xs font-black text-rose-700">
+                  <AlertTriangle className="w-4 h-4 text-rose-600" />
+                  <span>TRANSACTION VOIDED & CANCELLED</span>
+                </div>
+                <div className="text-xs text-rose-800">
+                  <span className="font-bold">Reason:</span> {selectedOrder.voidReason || 'Manager Cancelled'}
+                </div>
+                {selectedOrder.voidedBy && (
+                  <div className="text-[11px] text-rose-600">
+                    Authorized by: <span className="font-bold">{selectedOrder.voidedBy}</span>
+                    {selectedOrder.voidedAt && ` at ${new Date(selectedOrder.voidedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`}
+                  </div>
+                )}
+              </div>
+            )}
+
             <div className="flex gap-2 pt-2 border-t border-slate-100">
               <button
                 type="button"
                 onClick={() => setSelectedOrder(null)}
-                className="flex-1 py-2.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition"
+                className="py-2.5 px-3 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition"
               >
                 Close
               </button>
+              {selectedOrder.status !== 'VOIDED' && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const toVoid = selectedOrder;
+                    setSelectedOrder(null);
+                    setOrderToVoid(toVoid);
+                  }}
+                  className="py-2.5 px-3 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-bold flex items-center justify-center gap-1.5 transition active:scale-95"
+                  title="Void Order with Manager PIN"
+                >
+                  <RotateCcw className="w-3.5 h-3.5 text-rose-600" />
+                  <span>Void Order</span>
+                </button>
+              )}
               <button
                 type="button"
                 onClick={() => {
@@ -717,11 +821,27 @@ export const OrderHistoryView: React.FC = () => {
                 className="flex-1 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-sm transition active:scale-95"
               >
                 <Printer className="w-3.5 h-3.5" />
-                <span>Reprint Slip</span>
+                <span>{selectedOrder.status === 'VOIDED' ? 'Print Void Slip' : 'Reprint Slip'}</span>
               </button>
             </div>
           </div>
         </div>
+      )}
+
+      {/* Void Order Modal with Manager PIN Security Gate */}
+      {orderToVoid && (
+        <VoidOrderModal
+          order={orderToVoid}
+          onClose={() => setOrderToVoid(null)}
+          onVoidSuccess={(voided) => {
+            setOrders((prev) =>
+              prev.map((o) => (o.id === voided.id ? { ...o, ...voided } : o))
+            );
+            if (selectedOrder?.id === voided.id) {
+              setSelectedOrder(voided);
+            }
+          }}
+        />
       )}
     </div>
   );

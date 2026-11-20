@@ -125,6 +125,24 @@
   - **Lock & Logout Workflows:** Tapping logout in the left sidebar or the header cashier avatar immediately locks the terminal and returns to the PIN screen.
   - **Staff Management in Settings:** Added dedicated "Staff Accounts & PIN Access" tab under SettingsView for registering new staff, changing PINs, and setting roles (`CASHIER`, `MANAGER`).
 
+- **Void, Refund & Order Cancellation Architecture (Phase 4.15):**
+  - **User Feedback Addressed:** "A. Void / Refund / Cancel Transaction (May Manager Approval) ... Button sa Order History para mag-Void o Refund. Nanghihingi ng Manager PIN ... Awtomatikong ibabalik ang stock sa inventory at babaguhin ang status sa VOIDED."
+  - **Manager Security Gate (`VoidOrderModal.tsx`):**
+    - High-security PIN keypad checking against `useSettingsStore.settings.managerPin` (default `1234`) and any staff user in `useAuthStore` with `MANAGER` or `ADMIN` role.
+    - Prevents cashiers from unauthorized voids, eliminating cash drawer skimming and fraudulent returns.
+  - **Standardized Reason Tracking:**
+    - Dropdown with presets ("Cashier Punch Error", "Wrong Payment Method", "Customer Cancellation", "Defective/Returned Product", "Customer Dispute") and optional custom notes.
+  - **Atomic Stock Restoral:**
+    - Automatically restocks returned item quantities (`product.stock + qty`) and creates an audit entry in Dexie `stockLedger` with reason `'VOID'`.
+  - **Active Shift Drawer Balancing:**
+    - Adjusts active shift (`db.shifts`) by deducting voided cash or digital payments, preventing discrepancies during end-of-day drawer counts.
+  - **Order History Integration:**
+    - Added Status Filter Tabs (`All Orders`, `Completed`, `Voided`) with real-time counters.
+    - In-row `[ 🚫 Void ]` button and detailed receipt modal trigger.
+    - Prominent red `VOIDED` status badge displaying the reason.
+  - **Thermal Printing:**
+    - Receipts for voided transactions print with a bold `*** VOID RECEIPT ***` header, manager approval name, timestamp, and cancellation banner.
+
 ## Target Personas
 1. **Micro / Solo User:** Standalone Android tablet running the **`.apk`** with no continuous internet. Daily operations and Z-reports are 100% self-contained on the device.
 2. **Medium Business:** Multiple terminals (desktops + tablets) syncing through a centralized cloud backend with role-based cashier PINs and branch management.

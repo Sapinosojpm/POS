@@ -48,7 +48,10 @@ export class ThermalPrinterService {
     };
 
     const isTaxEnabled = (settings as any).enableTax !== false;
-    const receiptTitle = isTaxEnabled
+    const isVoided = order.status === 'VOIDED';
+    const receiptTitle = isVoided
+      ? '*** VOID RECEIPT ***'
+      : isTaxEnabled
       ? (settings.receiptHeader || 'OFFICIAL RECEIPT')
       : 'ACKNOWLEDGEMENT RECEIPT / NON-VAT';
 
@@ -63,7 +66,7 @@ ${center(receiptTitle)}
 Date: ${dateStr}
 Order No: ${order.orderNumber}
 Cashier:  ${order.cashierName}
-${(order.orderType || order.tableLabel) ? `Order:    ${order.orderType === 'DINE_IN' ? 'DINE-IN' : order.orderType === 'TAKEOUT' ? 'TAKEOUT' : ''}${order.tableLabel ? (order.orderType ? ` (${order.tableLabel})` : order.tableLabel) : ''}\n` : ''}${divider}
+${(order.orderType || order.tableLabel) ? `Order:    ${order.orderType === 'DINE_IN' ? 'DINE-IN' : order.orderType === 'TAKEOUT' ? 'TAKEOUT' : ''}${order.tableLabel ? (order.orderType ? ` (${order.tableLabel})` : order.tableLabel) : ''}\n` : ''}${isVoided ? `${divider}\n${center('*** TRANSACTION VOIDED ***')}\nReason:   ${order.voidReason || 'Manager Cancelled'}\nApprover: ${order.voidedBy || 'Store Manager'}\nVoid At:  ${new Date(order.voidedAt || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}\n` : ''}${divider}
 QTY  ITEM                  TOTAL
 `;
 
@@ -112,6 +115,10 @@ ${divider}
         text += `Customer:   ${order.discountCustomerName}\n`;
       }
       text += `Signature:  ______________________\n${divider}\n`;
+    }
+
+    if (isVoided) {
+      text += `${center('*** THIS TRANSACTION IS VOID & CANCELLED ***')}\n${divider}\n`;
     }
 
     text += `${settings.receiptFooter.split('\n').map(line => center(line)).join('\n')}

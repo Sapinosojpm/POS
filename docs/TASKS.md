@@ -148,6 +148,21 @@
 - [x] Add "Staff Accounts & PIN Access" tab to `SettingsView.tsx` for adding, viewing, and managing cashiers.
 - [x] Verify production build (`npm run build`) and sync assets to Capacitor Android (`npx cap sync`).
 
+## Phase 4.15: Void / Refund / Cancel Transaction with Manager Approval (PRD 3.16)
+- [x] Extend `Order` schema in `src/types/index.ts` with `voidReason`, `voidedAt`, and `voidedBy`.
+- [x] Build `VoidOrderModal.tsx`:
+  - 4-digit Manager PIN verification gate against settings and staff manager accounts (default `1234`).
+  - Standardized cancellation reason dropdown + optional detailed notes.
+  - Automatic inventory restock toggle (`+qty` returned to shelf stock with ledger movement `VOID`).
+  - Active shift drawer deductions for accurate cash drawer reconciliation.
+  - Outbox queue event dispatch for cloud PostgreSQL sync.
+- [x] Update `OrderHistoryView.tsx`:
+  - Quick status filter tabs (`All Orders`, `Completed`, `Voided`) with dynamic counters.
+  - Visual `VOIDED` status badge with reason tooltip.
+  - In-row `[ 🚫 Void ]` action button and modal `[ Void Order ]` trigger.
+- [x] Update ESC/POS thermal printer generator (`printer.ts`) with dedicated `*** VOID RECEIPT ***` layout.
+- [x] Verify production build (`npm run build`) and sync assets to Capacitor Android (`npx cap sync`).
+
 ## Phase 5: PostgreSQL Backend Infrastructure & Sync Gateway
 - [x] Create PostgreSQL schema `sql/postgres_schema.sql` defining relational tables (`branches`, `devices`, `categories`, `products`, `orders`, `order_items`, `shifts`, `stock_ledger`) with UUID keys, indexes, and updated_at triggers.
 - [x] Implement standalone Node.js sync server (`server/index.mjs`) implementing `POST /api/sync/push` (batch idempotent PostgreSQL upserts) and `GET /api/sync/pull` (delta changes since timestamp).
