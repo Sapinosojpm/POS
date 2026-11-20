@@ -44,6 +44,8 @@ export const SettingsView: React.FC = () => {
   const { users, addUser, deleteUser, resetUsersToDefault } = useAuthStore();
   const [formData, setFormData] = useState<StoreSettings>({ ...settings });
   const [activeSection, setActiveSection] = useState<'store' | 'staff' | 'payments' | 'finance' | 'printer' | 'scanner' | 'data'>('store');
+  const [showReceiptPreview, setShowReceiptPreview] = useState(false);
+  const isPreviewVisible = activeSection === 'printer' || showReceiptPreview;
   const [isAddStaffOpen, setIsAddStaffOpen] = useState(false);
   const [staffForm, setStaffForm] = useState<{ name: string; role: 'CASHIER' | 'MANAGER'; pin: string }>({
     name: '',
@@ -345,36 +347,58 @@ export const SettingsView: React.FC = () => {
       </div>
 
       {/* Main Grid: Settings Tabs + Forms + Live Thermal Receipt Preview */}
-      <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 flex-1 min-h-0">
+      <div className={`grid grid-cols-1 ${isPreviewVisible ? 'xl:grid-cols-12' : 'max-w-5xl w-full mx-auto'} gap-6 flex-1 min-h-0`}>
         {/* Left Settings Panel (Tabs + Form Fields) */}
-        <div className="xl:col-span-7 flex flex-col gap-4">
+        <div className={`${isPreviewVisible ? 'xl:col-span-7' : 'w-full'} flex flex-col gap-4`}>
           {/* Navigation Tab Bar */}
-          <div className="flex items-center gap-1.5 p-1 bg-white border border-slate-200 rounded-xl shrink-0 overflow-x-auto scrollbar-none">
-            {[
-              { id: 'store', label: 'Store Identity', icon: Store },
-              { id: 'staff', label: 'Staff & PINs', icon: Users },
-              { id: 'payments', label: 'Payment Methods', icon: CreditCard },
-              { id: 'finance', label: 'Tax & Currency', icon: DollarSign },
-              { id: 'printer', label: 'Thermal Printer', icon: Printer },
-              { id: 'scanner', label: 'Barcode Scanner', icon: Scan },
-              { id: 'data', label: 'Backup & Security', icon: ShieldCheck },
-            ].map(({ id, label, icon: Icon }) => {
-              const isActive = activeSection === id;
-              return (
-                <button
-                  key={id}
-                  onClick={() => setActiveSection(id as any)}
-                  className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-bold transition-all ${
-                    isActive
-                      ? 'bg-blue-600 text-white shadow-xs'
-                      : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
-                  }`}
-                >
-                  <Icon className="w-3.5 h-3.5 stroke-[2]" />
-                  <span className="hidden sm:inline">{label}</span>
-                </button>
-              );
-            })}
+          <div className="flex flex-wrap items-center justify-between gap-2 p-1.5 bg-white border border-slate-200 rounded-2xl shrink-0 shadow-2xs">
+            <div className="flex flex-wrap items-center gap-1">
+              {[
+                { id: 'store', label: 'Store Identity', icon: Store },
+                { id: 'staff', label: 'Staff & PINs', icon: Users },
+                { id: 'payments', label: 'Payment Methods', icon: CreditCard },
+                { id: 'finance', label: 'Tax & Currency', icon: DollarSign },
+                { id: 'printer', label: 'Thermal Printer', icon: Printer },
+                { id: 'scanner', label: 'Barcode Scanner', icon: Scan },
+                { id: 'data', label: 'Backup & Security', icon: ShieldCheck },
+              ].map(({ id, label, icon: Icon }) => {
+                const isActive = activeSection === id;
+                return (
+                  <button
+                    key={id}
+                    onClick={() => {
+                      setActiveSection(id as any);
+                      if (id === 'printer') setShowReceiptPreview(true);
+                    }}
+                    className={`flex items-center gap-2 py-2 px-3 sm:px-3.5 rounded-xl text-xs font-bold transition-all active:scale-95 ${
+                      isActive
+                        ? 'bg-blue-600 text-white shadow-xs'
+                        : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                    }`}
+                  >
+                    <Icon className="w-3.5 h-3.5 stroke-[2]" />
+                    <span>{label}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Quick Slip Preview Toggle Button (when not on printer tab) */}
+            {activeSection !== 'printer' && (
+              <button
+                type="button"
+                onClick={() => setShowReceiptPreview(!showReceiptPreview)}
+                className={`flex items-center gap-1.5 py-1.5 px-3 rounded-xl text-xs font-bold border transition active:scale-95 ml-auto ${
+                  showReceiptPreview
+                    ? 'bg-blue-50 text-blue-700 border-blue-300'
+                    : 'bg-slate-50 hover:bg-slate-100 text-slate-600 border-slate-200'
+                }`}
+                title="Toggle Live Thermal Slip Preview column"
+              >
+                <Receipt className="w-3.5 h-3.5 text-blue-600" />
+                <span>{showReceiptPreview ? 'Hide Receipt Slip' : 'Preview Slip'}</span>
+              </button>
+            )}
           </div>
 
           {/* Form Content Cards */}
@@ -1338,47 +1362,79 @@ export const SettingsView: React.FC = () => {
 
             {/* SECTION 4: DATA & SECURITY */}
             {activeSection === 'data' && (
-              <div className="space-y-4 animate-in fade-in duration-200">
-                <div className="border-b border-slate-100 pb-3">
-                  <h3 className="font-bold text-sm text-slate-900">Database Backup & Security Protection</h3>
-                  <p className="text-xs text-slate-400 mt-0.5">
-                    Safeguard offline sales records and manage the 4-digit Manager PIN.
-                  </p>
+              <div className="space-y-5 animate-in fade-in duration-200">
+                <div className="border-b border-slate-100 pb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div>
+                    <h3 className="font-bold text-sm text-slate-900 flex items-center gap-2">
+                      <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                      <span>Database Backup & Security Protection</span>
+                    </h3>
+                    <p className="text-xs text-slate-400 mt-0.5">
+                      Safeguard offline sales records, export portable snapshots, and manage the 4-digit Manager PIN.
+                    </p>
+                  </div>
+                  <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 self-start sm:self-auto">
+                    100% Offline Compatible
+                  </span>
                 </div>
 
-                {/* Backup & Restore Controls */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                  <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 flex flex-col justify-between">
+                {/* Backup & Restore Cards Grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {/* Export Card */}
+                  <div className="p-5 bg-slate-50/70 rounded-2xl border border-slate-200/90 shadow-2xs hover:shadow-xs transition flex flex-col justify-between">
                     <div>
-                      <div className="flex items-center gap-2 text-slate-800 font-bold text-xs mb-1">
-                        <Download className="w-4 h-4 text-blue-600" />
-                        <span>Export Database (JSON)</span>
+                      <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center ring-1 ring-blue-100 mb-3 shadow-2xs">
+                        <Download className="w-5 h-5 stroke-[2]" />
                       </div>
-                      <p className="text-[11px] text-slate-500 mb-3 leading-normal">
-                        Downloads an offline JSON snapshot of all products, inventory counts, shifts, and completed receipts.
+                      <h4 className="font-bold text-sm text-slate-900">Export Database (JSON Snapshot)</h4>
+                      <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                        Downloads an offline JSON file containing all products, active catalog, order history, cash shifts, and settings.
                       </p>
+                      <div className="my-3 space-y-1.5 text-[11px] text-slate-600 font-medium">
+                        <div className="flex items-center gap-1.5">
+                          <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                          <span>Portable for USB flash drives & cloud drives</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                          <span>Complete product inventory, stock & pricing</span>
+                        </div>
+                      </div>
                     </div>
                     <button
                       type="button"
                       onClick={handleExportBackup}
-                      className="w-full py-2 bg-white hover:bg-slate-100 border border-slate-300 text-slate-800 font-bold text-xs rounded-lg transition active:scale-95"
+                      className="w-full py-2.5 px-4 bg-white hover:bg-blue-50 text-blue-700 border border-slate-200 hover:border-blue-300 font-bold text-xs rounded-xl transition active:scale-95 flex items-center justify-center gap-2 mt-2 shadow-2xs"
                     >
-                      Download Backup File
+                      <Download className="w-4 h-4 text-blue-600" />
+                      <span>Download Backup File (.json)</span>
                     </button>
                   </div>
 
-                  <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 flex flex-col justify-between">
+                  {/* Import Card */}
+                  <div className="p-5 bg-slate-50/70 rounded-2xl border border-slate-200/90 shadow-2xs hover:shadow-xs transition flex flex-col justify-between">
                     <div>
-                      <div className="flex items-center gap-2 text-slate-800 font-bold text-xs mb-1">
-                        <Upload className="w-4 h-4 text-emerald-600" />
-                        <span>Import Database (JSON)</span>
+                      <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center ring-1 ring-emerald-100 mb-3 shadow-2xs">
+                        <Upload className="w-5 h-5 stroke-[2]" />
                       </div>
-                      <p className="text-[11px] text-slate-500 mb-3 leading-normal">
-                        Restore your POS catalog and history from a previously saved JSON snapshot.
+                      <h4 className="font-bold text-sm text-slate-900">Restore Database Snapshot</h4>
+                      <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                        Restore your POS catalog, inventory levels, and previous order transactions from a previously saved JSON snapshot.
                       </p>
+                      <div className="my-3 space-y-1.5 text-[11px] text-slate-600 font-medium">
+                        <div className="flex items-center gap-1.5">
+                          <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                          <span>Instantly restores catalog & categories</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                          <span>Safely imports shifts & transaction logs</span>
+                        </div>
+                      </div>
                     </div>
-                    <label className="w-full py-2 bg-white hover:bg-slate-100 border border-slate-300 text-slate-800 font-bold text-xs rounded-lg transition text-center cursor-pointer block active:scale-95">
-                      Select Backup File
+                    <label className="w-full py-2.5 px-4 bg-white hover:bg-emerald-50 text-emerald-800 border border-slate-200 hover:border-emerald-300 font-bold text-xs rounded-xl transition text-center cursor-pointer flex items-center justify-center gap-2 mt-2 active:scale-95 shadow-2xs">
+                      <Upload className="w-4 h-4 text-emerald-600" />
+                      <span>Select Backup File to Restore</span>
                       <input
                         type="file"
                         accept=".json"
@@ -1389,17 +1445,23 @@ export const SettingsView: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Manager PIN Management */}
-                <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                  <div>
-                    <div className="flex items-center gap-1.5 font-bold text-xs text-slate-900">
-                      <Lock className="w-3.5 h-3.5 text-blue-600" />
-                      <span>Manager 4-Digit Security PIN</span>
+                {/* Manager Security PIN Card */}
+                <div className="p-4 sm:p-5 bg-white rounded-2xl border border-slate-200 shadow-2xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                  <div className="flex items-start gap-3.5">
+                    <div className="w-10 h-10 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center ring-1 ring-purple-100 shadow-2xs shrink-0 mt-0.5">
+                      <Key className="w-5 h-5 stroke-[2]" />
                     </div>
-                    <p className="text-[11px] text-slate-500 mt-0.5">
-                      Protects manager-only actions (Shift Z-readings, refunds, database wipe). Default is{' '}
-                      <strong className="text-slate-700">1234</strong>.
-                    </p>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h4 className="font-bold text-xs text-slate-900">Manager 4-Digit Security PIN</h4>
+                        <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200">
+                          Active: • • • •
+                        </span>
+                      </div>
+                      <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">
+                        Protects managerial authorizations: Voiding orders, manual discounts, staff configuration, and database wiping.
+                      </p>
+                    </div>
                   </div>
 
                   <button
@@ -1410,22 +1472,29 @@ export const SettingsView: React.FC = () => {
                       setNewPin('');
                       setIsPinModalOpen(true);
                     }}
-                    className="px-3 py-1.5 bg-white hover:bg-slate-100 text-slate-800 border border-slate-200 rounded-lg text-xs font-bold transition whitespace-nowrap active:scale-95"
+                    className="w-full sm:w-auto px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition whitespace-nowrap active:scale-95 shadow-xs"
                   >
                     Change PIN
                   </button>
                 </div>
 
                 {/* Factory Reset Danger Zone */}
-                <div className="p-4 bg-rose-50/70 rounded-xl border border-rose-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                  <div>
-                    <div className="flex items-center gap-1.5 font-bold text-xs text-rose-700">
-                      <AlertOctagon className="w-4 h-4" />
-                      <span>Factory Reset & Wipe Database</span>
+                <div className="p-4 sm:p-5 bg-rose-50/60 rounded-2xl border border-rose-200/80 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                  <div className="flex items-start gap-3.5">
+                    <div className="w-10 h-10 rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center ring-1 ring-rose-200 shadow-2xs shrink-0 mt-0.5">
+                      <AlertOctagon className="w-5 h-5 stroke-[2]" />
                     </div>
-                    <p className="text-[11px] text-rose-600/80 mt-0.5">
-                      Wipes all local sales transactions, resets inventory, and repopulates initial demo data. Requires Manager PIN.
-                    </p>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h4 className="font-black text-xs text-rose-700">Factory Reset & Wipe Database</h4>
+                        <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-rose-200/70 text-rose-800">
+                          High Danger
+                        </span>
+                      </div>
+                      <p className="text-xs text-rose-700/80 mt-0.5 leading-relaxed">
+                        Permanently wipes all local transaction logs, resets inventory counts, and restores default store demo seed. Requires Manager PIN.
+                      </p>
+                    </div>
                   </div>
 
                   <button
@@ -1435,9 +1504,9 @@ export const SettingsView: React.FC = () => {
                       setPinInput('');
                       setIsPinModalOpen(true);
                     }}
-                    className="px-3.5 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-bold transition whitespace-nowrap active:scale-95 shadow-xs"
+                    className="w-full sm:w-auto px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold transition whitespace-nowrap active:scale-95 shadow-md shadow-rose-600/20"
                   >
-                    Factory Reset
+                    Factory Reset Database
                   </button>
                 </div>
               </div>
@@ -1445,38 +1514,52 @@ export const SettingsView: React.FC = () => {
           </div>
         </div>
 
-        {/* Right Live Thermal Receipt Preview */}
-        <div className="xl:col-span-5 flex flex-col">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
-              <Receipt className="w-4 h-4 text-blue-600" />
-              <span>Live Thermal Slip Preview</span>
-            </span>
-            <span className="text-[11px] font-bold px-2 py-0.5 bg-blue-50 text-blue-600 rounded">
-              {formData.paperWidth} Format
-            </span>
-          </div>
-
-          <div className="bg-slate-900 rounded-xl p-4 shadow-inner flex-1 flex flex-col justify-center items-center">
-            {/* Thermal Receipt Paper Roll Simulation */}
-            <div
-              className={`bg-white text-slate-900 shadow-2xl p-5 rounded-md font-mono text-xs whitespace-pre leading-relaxed select-text overflow-x-auto transition-all duration-200 ${
-                formData.paperWidth === '80mm' ? 'w-full max-w-sm text-[12px]' : 'w-full max-w-[290px] text-[11px]'
-              }`}
-              style={{
-                boxShadow: '0 10px 30px -10px rgba(0,0,0,0.3)',
-                backgroundImage: 'radial-gradient(circle, rgba(0,0,0,0.03) 1px, transparent 1px)',
-                backgroundSize: '16px 16px',
-              }}
-            >
-              {receiptPreviewText}
+        {/* Right Live Thermal Receipt Preview (Shown on Thermal Printer tab or when toggled on) */}
+        {isPreviewVisible && (
+          <div className="xl:col-span-5 flex flex-col animate-in fade-in duration-200">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+                <Receipt className="w-4 h-4 text-blue-600" />
+                <span>Live Thermal Slip Preview</span>
+              </span>
+              <div className="flex items-center gap-1.5">
+                <span className="text-[11px] font-bold px-2 py-0.5 bg-blue-50 text-blue-600 rounded">
+                  {formData.paperWidth} Format
+                </span>
+                {activeSection !== 'printer' && (
+                  <button
+                    type="button"
+                    onClick={() => setShowReceiptPreview(false)}
+                    className="text-xs text-slate-400 hover:text-slate-600 px-1 font-bold"
+                    title="Close Preview"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
             </div>
 
-            <p className="text-[11px] text-slate-400 mt-3 text-center">
-              Real-time ESC/POS formatting preview reflects your store name, address, and currency.
-            </p>
+            <div className="bg-slate-900 rounded-xl p-4 shadow-inner flex-1 flex flex-col justify-center items-center min-h-[480px]">
+              {/* Thermal Receipt Paper Roll Simulation */}
+              <div
+                className={`bg-white text-slate-900 shadow-2xl p-5 rounded-md font-mono text-xs whitespace-pre leading-relaxed select-text overflow-x-auto transition-all duration-200 ${
+                  formData.paperWidth === '80mm' ? 'w-full max-w-sm text-[12px]' : 'w-full max-w-[290px] text-[11px]'
+                }`}
+                style={{
+                  boxShadow: '0 10px 30px -10px rgba(0,0,0,0.3)',
+                  backgroundImage: 'radial-gradient(circle, rgba(0,0,0,0.03) 1px, transparent 1px)',
+                  backgroundSize: '16px 16px',
+                }}
+              >
+                {receiptPreviewText}
+              </div>
+
+              <p className="text-[11px] text-slate-400 mt-3 text-center">
+                Real-time ESC/POS formatting preview reflects your store name, address, and currency.
+              </p>
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       {/* PIN Verification Modal */}
