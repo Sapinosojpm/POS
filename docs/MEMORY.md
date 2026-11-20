@@ -162,6 +162,18 @@
   - **Cohesive Seed Orders:**
     - Seeded realistic demo orders in `seed.ts` linking real products (`Grilled Steak`, `Pasta Bolognese`, `Spicy Fried Chicken`, `Iced Lemon Tea`) so fresh databases immediately display rich, cohesive metrics.
 
+- **Paperless Checkout & Digital E-Receipt Engine (Phase 4.17):**
+  - **User Feedback Addressed:** "ang iba walang printer pano masusulosyonan ito?"
+  - **Paperless Mode in Checkout:**
+    - Added quick toggle `[✓] Print physical thermal receipt` in `CheckoutModal.tsx`.
+    - When unchecked, the checkout button changes from `Complete & Print Receipt` to `[ ✓ Complete Order (₱XX.XX) ]` (green pill), eliminating all printer popup dialogues.
+  - **Auto-Print Configuration:**
+    - Surfaced `Auto-Print Thermal Receipt on Checkout` toggle switch in `SettingsView.tsx` under Hardware settings.
+  - **Enhanced Celebration Screen:**
+    - High-visibility `Change Due: ₱XX.XX` display.
+    - Added `[ 📱 Share E-Receipt ]` utilizing Web Share API (`navigator.share`) with automatic clipboard text copy fallback.
+    - Added `[ 🖨️ Print Slip ]` for optional on-demand printing.
+
 ## Target Personas
 1. **Micro / Solo User:** Standalone Android tablet running the **`.apk`** with no continuous internet. Daily operations and Z-reports are 100% self-contained on the device.
 2. **Medium Business:** Multiple terminals (desktops + tablets) syncing through a centralized cloud backend with role-based cashier PINs and branch management.

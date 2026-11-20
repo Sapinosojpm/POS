@@ -1,5 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { X, CheckCircle, Printer, CreditCard, Banknote, Smartphone, Clock, Wallet } from 'lucide-react';
+import {
+  X,
+  CheckCircle,
+  Printer,
+  CreditCard,
+  Banknote,
+  Smartphone,
+  Clock,
+  Wallet,
+  Share2,
+  ArrowRight,
+  Loader2,
+} from 'lucide-react';
 import { useCartStore } from '../store/useCartStore';
 import { useSettingsStore } from '../store/useSettingsStore';
 import { db } from '../core/db';
@@ -33,6 +45,11 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose, o
   const [completedOrder, setCompletedOrder] = useState<Order | null>(null);
   const { settings } = useSettingsStore();
   const { currentUser } = useAuthStore();
+  const [shouldPrintReceipt, setShouldPrintReceipt] = useState<boolean>(settings.autoPrintReceipt !== false);
+
+  useEffect(() => {
+    setShouldPrintReceipt(settings.autoPrintReceipt !== false);
+  }, [settings.autoPrintReceipt, isOpen]);
 
   const total = getTotal();
   const breakdown = getDiscountBreakdown();
@@ -175,6 +192,54 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose, o
     onClose();
   };
 
+  const handleShareReceipt = async () => {
+    if (!completedOrder) return;
+    const itemsSummary = items
+      .map((i) => `${i.quantity}x ${i.product.name} (${currency}${(i.product.price * i.quantity).toFixed(2)})`)
+      .join('\n');
+    const shareText = `🏪 ${settings.storeName}\n🧾 Order: ${completedOrder.orderNumber}\n📅 Date: ${new Date(completedOrder.createdAt).toLocaleString()}\n\nItems:\n${itemsSummary}\n\nTotal Paid: ${currency}${completedOrder.total.toFixed(2)} (${completedOrder.paymentMethod})\nChange Due: ${currency}${completedOrder.changeDue.toFixed(2)}\n\nThank you for your purchase!`;
+
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: `Receipt ${completedOrder.orderNumber}`,
+          text: shareText,
+        });
+        toast.success('E-Receipt Shared', 'Receipt shared via device share dialog');
+        return;
+      } catch (err) {
+        // User cancelled or share dismissed
+      }
+    }
+
+    try {
+      await navigator.clipboard.writeText(shareText);
+      toast.success('E-Receipt Copied!', 'Text receipt copied to clipboard. Ready to paste into SMS or chat!');
+    } catch {
+      toast.info('E-Receipt Info', shareText);
+    }
+  };
+
+  const handleManualPrint = async () => {
+    if (!completedOrder) return;
+    const orderItems: OrderItem[] = items.map((item) => ({
+      id: `item-${Date.now()}-${item.product.id}`,
+      orderId: completedOrder.id,
+      productId: item.product.id,
+      productName: item.product.name,
+      price: item.product.price,
+      quantity: item.quantity,
+      subtotal: item.product.price * item.quantity,
+    }));
+    try {
+      await printerService.printReceipt(completedOrder, orderItems);
+      toast.success('Receipt Printed', `Sent invoice ${completedOrder.orderNumber} to printer`);
+    } catch (err) {
+      console.error(err);
+      toast.error('Printer Not Available', 'Could not output to printer. Ensure device is paired.');
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 select-none">
       <div className="bg-white w-full max-w-lg rounded-xl shadow-xl overflow-hidden flex flex-col max-h-[92vh] border border-slate-200">
@@ -195,48 +260,87 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose, o
 
         {completedOrder ? (
           /* Order Complete Celebration Screen */
-          <div className="p-8 flex flex-col items-center justify-center text-center space-y-4">
-            <div className="w-16 h-16 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center">
-              <CheckCircle className="w-10 h-10 stroke-[2]" />
-            </div>
-            <div>
-              <h2 className="text-xl font-bold text-slate-900">Payment Completed!</h2>
-              <p className="text-xs text-slate-400 mt-1 font-mono font-medium">{completedOrder.orderNumber}</p>
+          <div className="p-6 sm:p-7 flex flex-col items-center justify-center text-center space-y-3.5">
+            <div className="w-14 h-14 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center ring-1 ring-emerald-100 shadow-2xs">
+              <CheckCircle className="w-8 h-8 stroke-[2.5]" />
             </div>
 
-            <div className="w-full bg-slate-50 p-4 rounded-lg border border-slate-200 text-left space-y-2">
-              <div className="flex justify-between text-xs text-slate-500">
-                <span>Method:</span>
+            <div>
+              <h2 className="text-xl font-black text-slate-900">Payment Completed!</h2>
+              <p className="text-xs text-slate-400 mt-0.5 font-mono font-medium">{completedOrder.orderNumber}</p>
+            </div>
+
+            {/* Change Due Highlight Box */}
+            {completedOrder.paymentMethod === 'CASH' && (
+              <div className="w-full bg-blue-50/80 border border-blue-200 rounded-xl p-3 flex items-center justify-between">
+                <span className="text-xs font-bold text-blue-900 uppercase tracking-wide">Change Due</span>
+                <span className="text-2xl font-black text-blue-600">
+                  {currency}{completedOrder.changeDue.toFixed(2)}
+                </span>
+              </div>
+            )}
+
+            {/* Digital Receipt Breakdown Card */}
+            <div className="w-full bg-slate-50 p-3.5 rounded-xl border border-slate-200 text-left space-y-1.5 text-xs">
+              <div className="flex justify-between text-slate-500">
+                <span>Payment Method:</span>
                 <span className="font-bold text-slate-800">{completedOrder.paymentMethod}</span>
               </div>
-              <div className="flex justify-between text-xs text-slate-500">
-                <span>Tendered:</span>
+              <div className="flex justify-between text-slate-500">
+                <span>Amount Tendered:</span>
                 <span className="font-bold text-slate-800">{currency}{completedOrder.amountTendered.toFixed(2)}</span>
               </div>
               {completedOrder.discount > 0 && (
-                <div className="flex justify-between text-xs text-rose-600 font-semibold">
+                <div className="flex justify-between text-rose-600 font-semibold">
                   <span>Discount Saved:</span>
                   <span>-{currency}{completedOrder.discount.toFixed(2)}</span>
                 </div>
               )}
               {completedOrder.vatExemptAmount && completedOrder.vatExemptAmount > 0 ? (
-                <div className="flex justify-between text-xs text-amber-700 font-semibold">
+                <div className="flex justify-between text-amber-700 font-semibold">
                   <span>VAT Exemption:</span>
                   <span>-{currency}{completedOrder.vatExemptAmount.toFixed(2)}</span>
                 </div>
               ) : null}
-              <div className="flex justify-between text-sm font-bold pt-2 border-t border-slate-200 text-blue-600">
-                <span>Change Due:</span>
-                <span>{currency}{completedOrder.changeDue.toFixed(2)}</span>
+              <div className="flex justify-between text-sm font-bold pt-2 border-t border-slate-200 text-slate-900">
+                <span>Total Paid:</span>
+                <span className="text-blue-600 font-black">{currency}{completedOrder.total.toFixed(2)}</span>
               </div>
             </div>
 
-            <button
-              onClick={handleFinish}
-              className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg shadow-sm transition active:scale-95"
-            >
-              Start Next Order
-            </button>
+            {/* Action Buttons: Next Order, Share E-Receipt, Print Receipt */}
+            <div className="w-full space-y-2 pt-1">
+              <button
+                type="button"
+                onClick={handleFinish}
+                className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-md shadow-blue-500/20 transition active:scale-95 flex items-center justify-center gap-2"
+              >
+                <span>Start Next Order</span>
+                <ArrowRight className="w-4 h-4" />
+              </button>
+
+              <div className="flex gap-2 w-full">
+                <button
+                  type="button"
+                  onClick={handleShareReceipt}
+                  className="flex-1 py-2.5 px-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl border border-slate-200 transition active:scale-95 flex items-center justify-center gap-1.5"
+                  title="Share digital slip via SMS, Messenger, or copy to clipboard"
+                >
+                  <Share2 className="w-3.5 h-3.5 text-blue-600" />
+                  <span>Share E-Receipt</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleManualPrint}
+                  className="flex-1 py-2.5 px-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl border border-slate-200 transition active:scale-95 flex items-center justify-center gap-1.5"
+                  title="Print paper receipt"
+                >
+                  <Printer className="w-3.5 h-3.5 text-slate-600" />
+                  <span>Print Slip</span>
+                </button>
+              </div>
+            </div>
           </div>
         ) : (
           /* Payment Methods & Numpad Screen */
@@ -320,18 +424,57 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose, o
               </>
             )}
 
+            {/* Paperless Mode / Thermal Receipt Toggle Switch */}
+            <div className="flex items-center justify-between p-2.5 rounded-lg border border-slate-200 bg-slate-50/70 hover:bg-slate-50 transition">
+              <label className="flex items-center gap-2 cursor-pointer flex-1">
+                <input
+                  type="checkbox"
+                  checked={shouldPrintReceipt}
+                  onChange={(e) => setShouldPrintReceipt(e.target.checked)}
+                  className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500 border-slate-300 transition cursor-pointer"
+                />
+                <div className="flex items-center gap-1.5 text-xs font-bold text-slate-700">
+                  <Printer className="w-3.5 h-3.5 text-slate-500" />
+                  <span>Print physical thermal receipt</span>
+                </div>
+              </label>
+              <span
+                className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-full ${
+                  shouldPrintReceipt
+                    ? 'bg-blue-100 text-blue-700'
+                    : 'bg-emerald-100 text-emerald-700'
+                }`}
+              >
+                {shouldPrintReceipt ? 'Printer ON' : 'Paperless Mode'}
+              </span>
+            </div>
+
             {/* Complete Payment Button */}
             <button
               disabled={!isExactOrOver || isProcessing}
-              onClick={() => handleCompleteSale(true)}
-              className={`w-full py-3.5 mt-2 rounded-lg font-bold text-sm flex items-center justify-center gap-2 shadow-sm transition-all active:scale-[0.98] ${
+              onClick={() => handleCompleteSale(shouldPrintReceipt)}
+              className={`w-full py-3.5 rounded-lg font-bold text-sm flex items-center justify-center gap-2 shadow-sm transition-all active:scale-[0.98] ${
                 !isExactOrOver || isProcessing
                   ? 'bg-slate-200 text-slate-400 cursor-not-allowed shadow-none'
-                  : 'bg-blue-600 hover:bg-blue-700 text-white shadow-blue-500/20'
+                  : shouldPrintReceipt
+                  ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-blue-500/20'
+                  : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-600/20'
               }`}
             >
-              <Printer className="w-4 h-4 stroke-[2]" />
-              <span>{isProcessing ? 'Processing Order...' : 'Complete & Print Receipt'}</span>
+              {isProcessing ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : shouldPrintReceipt ? (
+                <Printer className="w-4 h-4 stroke-[2]" />
+              ) : (
+                <CheckCircle className="w-4 h-4 stroke-[2]" />
+              )}
+              <span>
+                {isProcessing
+                  ? 'Processing Order...'
+                  : shouldPrintReceipt
+                  ? 'Complete & Print Receipt'
+                  : `Complete Order (${currency}${total.toFixed(2)})`}
+              </span>
             </button>
           </div>
         )}

@@ -175,6 +175,19 @@
 - [x] Seed realistic demo orders and order items in `seed.ts` if empty so fresh devices have immediate cohesive data.
 - [x] Verify production build (`npm run build`) and sync assets with `npx cap sync`.
 
+## Phase 4.17: Paperless Checkout Mode & Digital E-Receipt Engine (PRD 3.17)
+- [x] In `CheckoutModal.tsx`:
+  - Added paperless toggle switch `[✓] Print physical thermal receipt` with instant pill indicator (`Printer ON` / `Paperless Mode`).
+  - Dynamic Complete Button: Switches between `[ 🖨️ Complete & Print Receipt ]` and `[ ✓ Complete Order (₱XX.XX) ]` (paperless mode).
+  - High-visibility Change Due highlight box (`₱XX.XX`) for quick counter viewing.
+  - Digital E-Receipt celebration screen with 3 actionable paths:
+    - `[ Start Next Order ➔ ]` (Fast, immediate queue progression).
+    - `[ 📱 Share E-Receipt ]` (Web Share API with clipboard fallback for SMS/Messenger/Viber).
+    - `[ 🖨️ Print Slip ]` (Optional on-demand physical reprint).
+- [x] In `SettingsView.tsx`:
+  - Added "Auto-Print Thermal Receipt on Checkout" toggle switch in Hardware settings to store permanent preferences.
+- [x] Verified build (`npm run build`) and synced assets to Capacitor Android (`npx cap sync`).
+
 ## Phase 5: PostgreSQL Backend Infrastructure & Sync Gateway
 - [x] Create PostgreSQL schema `sql/postgres_schema.sql` defining relational tables (`branches`, `devices`, `categories`, `products`, `orders`, `order_items`, `shifts`, `stock_ledger`) with UUID keys, indexes, and updated_at triggers.
 - [x] Implement standalone Node.js sync server (`server/index.mjs`) implementing `POST /api/sync/push` (batch idempotent PostgreSQL upserts) and `GET /api/sync/pull` (delta changes since timestamp).
