@@ -242,17 +242,17 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose, o
 
   return (
     <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 select-none">
-      <div className="bg-white w-full max-w-lg rounded-xl shadow-xl overflow-hidden flex flex-col max-h-[92vh] border border-slate-200">
+      <div className="bg-white w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh] border border-slate-200">
         
         {/* Header */}
-        <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-white shrink-0">
+        <div className="px-5 sm:px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-white shrink-0">
           <div>
             <h3 className="font-bold text-base text-slate-900">Checkout & Payment</h3>
-            <p className="text-xs text-slate-500 mt-0.5">Order Total Due: <span className="font-bold text-slate-900">{currency}{total.toFixed(2)}</span></p>
+            <p className="text-xs text-slate-500 mt-0.5">Order Total Due: <span className="font-bold text-slate-900 tabular-nums">{currency}{total.toFixed(2)}</span></p>
           </div>
           <button
             onClick={onClose}
-            className="w-8 h-8 rounded-md bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500 hover:text-slate-800 transition"
+            className="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500 hover:text-slate-800 transition active:scale-95"
           >
             <X className="w-4 h-4 stroke-[2]" />
           </button>
@@ -367,14 +367,16 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose, o
             </div>
 
             {/* Total Due & Change Summary Card */}
-            <div className="grid grid-cols-2 gap-3 p-3.5 bg-slate-50 rounded-lg border border-slate-200">
+            <div className="grid grid-cols-2 gap-3 p-3.5 bg-slate-50 rounded-xl border border-slate-200/90">
               <div>
-                <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Total Due</span>
-                <p className="text-xl font-bold text-slate-900 mt-0.5">{currency}{total.toFixed(2)}</p>
+                <span className="text-xs font-semibold text-slate-500">Total Due</span>
+                <p className="text-2xl font-black text-slate-900 mt-0.5 tabular-nums">
+                  {currency}{total.toFixed(2)}
+                </p>
               </div>
               <div className="text-right">
-                <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Change Due</span>
-                <p className={`text-xl font-bold mt-0.5 ${tendered >= total ? 'text-blue-600' : 'text-slate-300'}`}>
+                <span className="text-xs font-semibold text-slate-500">Change Due</span>
+                <p className={`text-2xl font-black mt-0.5 tabular-nums ${tendered >= total && changeDue > 0 ? 'text-blue-600' : tendered >= total ? 'text-emerald-600' : 'text-slate-300'}`}>
                   {currency}{changeDue.toFixed(2)}
                 </p>
               </div>
@@ -382,19 +384,21 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose, o
 
             {paymentMethod === 'CASH' && (
               <>
-                {/* Quick Cash Buttons */}
+                {/* Quick Cash Denomination Buttons */}
                 <div className="flex gap-1.5">
                   <button
+                    type="button"
                     onClick={() => handleQuickCash(total)}
-                    className="flex-1 py-1.5 px-1 bg-blue-50 hover:bg-blue-100 text-blue-600 font-bold text-xs rounded-md border border-blue-200 active:scale-95 transition"
+                    className="flex-1 h-9 px-1 bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold text-xs rounded-lg border border-blue-200/90 active:scale-95 transition shadow-2xs tabular-nums"
                   >
                     Exact ({currency}{Math.ceil(total)})
                   </button>
                   {[50, 100, 500, 1000].map((bill) => (
                     <button
                       key={bill}
+                      type="button"
                       onClick={() => handleQuickCash(bill)}
-                      className="flex-1 py-1.5 px-1 bg-slate-50 hover:bg-slate-100 text-slate-700 font-bold text-xs rounded-md border border-slate-200 active:scale-95 transition"
+                      className="flex-1 h-9 px-1 bg-slate-100 hover:bg-slate-200/90 text-slate-700 font-bold text-xs rounded-lg border border-slate-200/80 active:scale-95 transition shadow-2xs tabular-nums"
                     >
                       {currency}{bill}
                     </button>
@@ -402,20 +406,21 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose, o
                 </div>
 
                 {/* Amount Tendered Display Box */}
-                <div className="flex items-center justify-between p-3 bg-white border border-blue-500 rounded-lg">
-                  <span className="text-xs font-bold text-slate-400">Cash Received:</span>
-                  <span className="text-xl font-black text-slate-900">
+                <div className="flex items-center justify-between px-4 py-3 bg-white border-2 border-blue-500 rounded-xl shadow-xs">
+                  <span className="text-xs font-bold text-slate-500">Cash Received:</span>
+                  <span className="text-2xl font-black text-slate-900 tabular-nums">
                     {currency}{tenderedStr || '0'}
                   </span>
                 </div>
 
-                {/* Modern Numpad */}
-                <div className="grid grid-cols-3 gap-1.5 pt-1">
+                {/* Modern Tactile POS Numpad */}
+                <div className="grid grid-cols-3 gap-2 pt-1">
                   {['1', '2', '3', '4', '5', '6', '7', '8', '9', '.', '0', 'BACK'].map((key) => (
                     <button
                       key={key}
+                      type="button"
                       onClick={() => handleNumpad(key)}
-                      className="h-11 bg-slate-50 hover:bg-slate-100 active:bg-slate-200 text-slate-800 font-bold text-base rounded-md border border-slate-200 transition active:scale-95 flex items-center justify-center"
+                      className="h-12 bg-slate-50 hover:bg-slate-100 active:bg-slate-200 text-slate-800 font-bold text-lg rounded-xl border border-slate-200/90 transition-all active:scale-95 flex items-center justify-center shadow-2xs"
                     >
                       {key === 'BACK' ? '⌫' : key}
                     </button>

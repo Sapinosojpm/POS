@@ -361,23 +361,23 @@ export const OrderHistoryView: React.FC = () => {
       {/* KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 mb-5 shrink-0">
         <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs">
-          <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
-            Total Revenue Today
+          <span className="text-xs font-semibold text-slate-500 block">
+            Total Revenue
           </span>
-          <p className="text-2xl font-black text-blue-600 mt-1 tracking-tight">
+          <p className="text-2xl font-black text-blue-600 mt-1 tracking-tight tabular-nums">
             {currency}{totalRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </p>
           <div className="mt-2.5 pt-2 border-t border-slate-100 text-[11px] text-slate-400 flex items-center justify-between">
             <span>{completedOrders.length} Paid Invoices</span>
-            <span className="text-emerald-600 font-bold">100% Offline Ready</span>
+            <span className="text-emerald-700 font-bold">100% Offline Ready</span>
           </div>
         </div>
 
         <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs">
-          <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
+          <span className="text-xs font-semibold text-slate-500 block">
             Cash Collected
           </span>
-          <p className="text-2xl font-black text-slate-900 mt-1 tracking-tight">
+          <p className="text-2xl font-black text-slate-900 mt-1 tracking-tight tabular-nums">
             {currency}{totalCash.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </p>
           <div className="mt-2.5 pt-2 border-t border-slate-100 text-[11px] text-slate-400 flex items-center justify-between">
@@ -387,10 +387,10 @@ export const OrderHistoryView: React.FC = () => {
         </div>
 
         <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs">
-          <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
-            Digital / E-Wallet Sales
+          <span className="text-xs font-semibold text-slate-500 block">
+            Digital & Card Sales
           </span>
-          <p className="text-2xl font-black text-indigo-600 mt-1 tracking-tight">
+          <p className="text-2xl font-black text-indigo-600 mt-1 tracking-tight tabular-nums">
             {currency}{totalDigital.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </p>
           <div className="mt-2.5 pt-2 border-t border-slate-100 text-[11px] text-slate-400 flex items-center justify-between">
@@ -400,10 +400,10 @@ export const OrderHistoryView: React.FC = () => {
         </div>
 
         <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs">
-          <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
-            Average Ticket Value
+          <span className="text-xs font-semibold text-slate-500 block">
+            Average Ticket
           </span>
-          <p className="text-2xl font-black text-slate-900 mt-1 tracking-tight">
+          <p className="text-2xl font-black text-slate-900 mt-1 tracking-tight tabular-nums">
             {currency}{avgOrderValue.toFixed(2)}
           </p>
           <div className="mt-2.5 pt-2 border-t border-slate-100 text-[11px] text-slate-400 flex items-center justify-between">

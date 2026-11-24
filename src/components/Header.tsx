@@ -205,15 +205,15 @@ export const Header: React.FC<HeaderProps> = ({
               {(currentUser?.name || 'C').slice(0, 2).toUpperCase()}
             </div>
           )}
-          <div className="hidden 2xl:block">
+          <div className="hidden sm:block">
             <h4 className="font-bold text-xs text-slate-800 leading-tight truncate max-w-[120px]">
               {currentUser?.name || 'Cashier'}
             </h4>
-            <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">
-              {currentUser?.role || 'Staff'}
+            <p className="text-[10px] text-slate-500 font-medium capitalize">
+              {currentUser?.role?.toLowerCase() || 'Staff'}
             </p>
           </div>
-          <LogOut className="w-3.5 h-3.5 text-slate-400 hidden xl:inline ml-0.5" />
+          <LogOut className="w-3.5 h-3.5 text-slate-400 hidden sm:inline ml-0.5" />
         </button>
       </div>
     </header>

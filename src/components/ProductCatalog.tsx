@@ -360,7 +360,7 @@ export const ProductCatalog: React.FC<ProductCatalogProps> = ({
 
                   <div className="flex items-center justify-between gap-1.5 mt-auto">
                     <span
-                      className={`text-sm sm:text-base font-black tracking-tight truncate ${
+                      className={`text-sm sm:text-base font-black tracking-tight truncate tabular-nums ${
                         soldOut ? 'text-slate-400' : 'text-slate-900'
                       }`}
                     >
@@ -375,28 +375,31 @@ export const ProductCatalog: React.FC<ProductCatalogProps> = ({
                         <button
                           type="button"
                           onClick={() => updateQuantity(prod.id, qty - 1)}
-                          className="w-9 h-9 rounded-l-xl hover:bg-blue-700 flex items-center justify-center transition active:scale-90"
+                          className="w-8 h-8 rounded-l-xl hover:bg-blue-700 flex items-center justify-center transition active:scale-90"
                           title="Decrease quantity"
                         >
-                          <Minus className="w-4 h-4 stroke-[2.5]" />
+                          <Minus className="w-3.5 h-3.5 stroke-[2.5]" />
                         </button>
+                        <span className="px-1.5 text-xs font-black min-w-[18px] text-center select-none tabular-nums">
+                          {qty}
+                        </span>
                         <button
                           type="button"
                           disabled={atLimit}
                           onClick={() => handleAdd(prod)}
-                          className="w-9 h-9 rounded-r-xl hover:bg-blue-700 disabled:opacity-40 disabled:hover:bg-transparent flex items-center justify-center transition active:scale-90"
+                          className="w-8 h-8 rounded-r-xl hover:bg-blue-700 disabled:opacity-40 disabled:hover:bg-transparent flex items-center justify-center transition active:scale-90"
                           title={atLimit ? 'Stock limit reached' : 'Increase quantity'}
                         >
-                          <Plus className="w-4 h-4 stroke-[2.5]" />
+                          <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
                         </button>
                       </div>
                     ) : (
                       <button
                         type="button"
-                        className="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 group-hover:bg-blue-600 group-hover:text-white flex items-center justify-center transition active:scale-90 shrink-0"
+                        className="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 border border-blue-200/80 hover:bg-blue-600 hover:text-white flex items-center justify-center transition active:scale-90 shrink-0 shadow-2xs"
                         title="Add to order"
                       >
-                        <Plus className="w-4 h-4 stroke-[2.5]" />
+                        <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
                       </button>
                     )}
                   </div>

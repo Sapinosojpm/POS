@@ -288,10 +288,10 @@ export const InventoryView: React.FC<InventoryViewProps> = ({ products, categori
         >
           <div className="flex items-start justify-between">
             <div>
-              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
-                Total Products
+              <span className="text-xs font-semibold text-slate-500 block">
+                Total Catalog
               </span>
-              <p className="text-2xl font-black text-slate-900 mt-1 tracking-tight">
+              <p className="text-2xl font-black text-slate-900 mt-1 tracking-tight tabular-nums">
                 {totalItemsCount}
               </p>
             </div>
@@ -318,10 +318,10 @@ export const InventoryView: React.FC<InventoryViewProps> = ({ products, categori
         >
           <div className="flex items-start justify-between">
             <div>
-              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
-                Low Stock Warning
+              <span className="text-xs font-semibold text-slate-500 block">
+                Low Stock Alert
               </span>
-              <p className={`text-2xl font-black mt-1 tracking-tight ${lowStockProducts.length > 0 ? 'text-amber-600' : 'text-slate-700'}`}>
+              <p className={`text-2xl font-black mt-1 tracking-tight tabular-nums ${lowStockProducts.length > 0 ? 'text-amber-600' : 'text-slate-700'}`}>
                 {lowStockProducts.length}
               </p>
             </div>
@@ -350,10 +350,10 @@ export const InventoryView: React.FC<InventoryViewProps> = ({ products, categori
         >
           <div className="flex items-start justify-between">
             <div>
-              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
+              <span className="text-xs font-semibold text-slate-500 block">
                 Out of Stock
               </span>
-              <p className={`text-2xl font-black mt-1 tracking-tight ${outOfStockProducts.length > 0 ? 'text-rose-600' : 'text-slate-700'}`}>
+              <p className={`text-2xl font-black mt-1 tracking-tight tabular-nums ${outOfStockProducts.length > 0 ? 'text-rose-600' : 'text-slate-700'}`}>
                 {outOfStockProducts.length}
               </p>
             </div>
@@ -375,10 +375,10 @@ export const InventoryView: React.FC<InventoryViewProps> = ({ products, categori
         <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs hover:border-emerald-200 hover:shadow-md transition-all relative overflow-hidden">
           <div className="flex items-start justify-between">
             <div>
-              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
-                Total Inventory Value
+              <span className="text-xs font-semibold text-slate-500 block">
+                Inventory Valuation
               </span>
-              <p className="text-2xl font-black text-emerald-600 mt-1 tracking-tight">
+              <p className="text-2xl font-black text-emerald-600 mt-1 tracking-tight tabular-nums">
                 {currency}{totalInventoryValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </p>
             </div>

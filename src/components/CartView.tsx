@@ -390,11 +390,11 @@ export const CartView: React.FC<CartViewProps> = ({ onOpenCheckout, onClose, onT
         ) : (
         <>
         <div className="flex items-center justify-between">
-          <h3 className="font-bold text-xs text-slate-900 tracking-wide uppercase">
+          <h3 className="font-bold text-xs text-slate-800 tracking-tight">
             Payment Summary
           </h3>
           {discount && (
-            <span className="text-[10px] font-bold text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded">
+            <span className="text-[10px] font-bold text-amber-800 bg-amber-100 border border-amber-200 px-2 py-0.5 rounded-full">
               Discount Active
             </span>
           )}
@@ -481,7 +481,7 @@ export const CartView: React.FC<CartViewProps> = ({ onOpenCheckout, onClose, onT
 
           <div className="flex justify-between text-sm font-black text-slate-900 pt-2 border-t border-slate-200">
             <span>Total Payment</span>
-            <span className="text-base text-blue-600">{currency}{total.toFixed(2)}</span>
+            <span className="text-base text-blue-600 tabular-nums">{currency}{total.toFixed(2)}</span>
           </div>
         </div>
 
@@ -493,9 +493,9 @@ export const CartView: React.FC<CartViewProps> = ({ onOpenCheckout, onClose, onT
               <button
                 key={id}
                 onClick={() => setPaymentMethod(id as PaymentMethod)}
-                className={`py-2 px-1 rounded-md text-[11px] font-bold flex flex-col items-center justify-center gap-1 border transition-all ${
+                className={`py-2 px-1 rounded-md text-[11px] font-bold flex flex-col items-center justify-center gap-1 border transition-all active:scale-95 ${
                   isSelected
-                    ? 'border-blue-600 bg-blue-50 text-blue-600 shadow-xs'
+                    ? 'border-blue-600 bg-blue-50 text-blue-600 shadow-xs ring-1 ring-blue-500/20'
                     : 'border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100'
                 }`}
               >
@@ -512,13 +512,17 @@ export const CartView: React.FC<CartViewProps> = ({ onOpenCheckout, onClose, onT
         <button
           disabled={items.length === 0}
           onClick={onOpenCheckout}
-          className={`w-full py-3 mt-2 rounded-lg font-bold text-sm flex items-center justify-center gap-2 shadow-sm transition-all active:scale-[0.98] ${
+          className={`w-full py-3 mt-2 rounded-xl font-bold text-sm flex items-center justify-center gap-2 shadow-sm transition-all active:scale-[0.98] ${
             items.length === 0
-              ? 'bg-slate-200 text-slate-400 cursor-not-allowed shadow-none'
-              : 'bg-blue-600 hover:bg-blue-700 text-white shadow-blue-500/20'
+              ? 'bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed shadow-none'
+              : 'bg-blue-600 hover:bg-blue-700 text-white shadow-md shadow-blue-500/20 cursor-pointer'
           }`}
         >
-          <span>{items.length === 0 ? 'Add items to order' : 'Place An Order'}</span>
+          <span>
+            {items.length === 0
+              ? 'Add items to order'
+              : `Place An Order • ${currency}${total.toFixed(2)}`}
+          </span>
           {items.length > 0 && <ArrowRight className="w-4 h-4 stroke-[2.5]" />}
         </button>
       </div>
