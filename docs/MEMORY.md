@@ -47,6 +47,12 @@
   - **Pull Synchronization:** Smart Delta Polling strategy (on startup, on reconnect, 5-minute background intervals, and manual 'Force Sync' trigger) to conserve tablet battery and cellular bandwidth.
   - **Outbox Push Engine:** Dexie `sync_queue` background worker flushing batches of 50 events using client-generated UUIDv4 idempotency keys.
 
+- **GitHub Release v1.2.0 Publication (Nov 24, 2026):**
+  - Published release tag `v1.2.0` to both `EDGEPOINT-SOLUTIONS/POS` and `Sapinosojpm/POS`.
+  - Binary assets attached: `Universal_POS_v1.2.apk` and `Universal_POS_latest.apk` (5.2 MB, built on Nov 24, 2026).
+  - Implemented comprehensive `frontend-design` UX elevation across all modules: Dashboard, Product Catalog, Cart/Invoice, Checkout Numpad, Order History, Inventory, and Top Header.
+  - Release URL: https://github.com/EDGEPOINT-SOLUTIONS/POS/releases/tag/v1.2.0
+
 - **GitHub Release v1.1.0 Publication (Nov 20, 2026):**
   - Published release tag `v1.1.0` to both `EDGEPOINT-SOLUTIONS/POS` and `Sapinosojpm/POS`.
   - Binary asset attached: `Universal_POS_v1.1.apk` (5.2 MB, built on Nov 20, 2026 with custom app launcher icons, void manager gate, paperless sharing, and real-time Dexie analytics).
