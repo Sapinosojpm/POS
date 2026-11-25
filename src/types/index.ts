@@ -35,6 +35,7 @@ export interface OrderItem {
   price: number;
   quantity: number;
   subtotal: number;
+  notes?: string;
 }
 
 export type DiscountType = 'NONE' | 'SENIOR' | 'PWD' | 'PERCENT' | 'FIXED';

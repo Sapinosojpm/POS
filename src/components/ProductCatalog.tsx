@@ -1,6 +1,6 @@
 import React, { useMemo, useRef, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { Plus, Minus, ChevronLeft, ChevronRight, ArrowUpDown, Grid, LayoutGrid } from 'lucide-react';
+import { Plus, Minus, ChevronLeft, ChevronRight, ArrowUpDown, Grid, LayoutGrid, Search } from 'lucide-react';
 import type { Product, Category } from '../types';
 import { useCartStore } from '../store/useCartStore';
 import { toast } from '../store/useToastStore';
@@ -207,10 +207,19 @@ export const ProductCatalog: React.FC<ProductCatalogProps> = ({
       {/* Section title + sort */}
       <div className="flex items-center justify-between gap-3 mb-3 shrink-0">
         <div className="min-w-0">
-          <h2 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight truncate">
-            {activeCategory?.name || 'All'} Menu
-          </h2>
-          <p className="text-[11px] font-medium text-slate-400">{visibleProducts.length} items</p>
+          <div className="flex items-center gap-2 flex-wrap">
+            <h2 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight truncate">
+              {searchQuery ? `Search: "${searchQuery}"` : `${activeCategory?.name || 'All'} Menu`}
+            </h2>
+            {searchQuery && (
+              <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
+                {visibleProducts.length} found
+              </span>
+            )}
+          </div>
+          <p className="text-[11px] font-medium text-slate-400">
+            {searchQuery ? 'Showing matching catalog items' : `${visibleProducts.length} items`}
+          </p>
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
@@ -279,9 +288,18 @@ export const ProductCatalog: React.FC<ProductCatalogProps> = ({
         {isLoading || isSwitching ? (
           Array.from({ length: 6 }).map((_, i) => <ProductCardSkeleton key={i} />)
         ) : visibleProducts.length === 0 ? (
-          <div className="col-span-full py-16 text-center text-slate-400">
-            <p className="font-bold text-slate-700 text-sm">No dishes found</p>
-            <p className="text-xs mt-1">Try another category or clear your search.</p>
+          <div className="col-span-full py-16 flex flex-col items-center justify-center text-center px-4">
+            <div className="w-14 h-14 rounded-2xl bg-white border border-slate-200 flex items-center justify-center text-slate-400 mb-3 shadow-2xs">
+              <Search className="w-6 h-6 stroke-[1.5]" />
+            </div>
+            <h3 className="font-bold text-slate-800 text-sm sm:text-base">
+              {searchQuery ? `No matches for "${searchQuery}"` : 'No items found in this category'}
+            </h3>
+            <p className="text-xs text-slate-500 mt-1 max-w-xs">
+              {searchQuery
+                ? 'Check spelling, try scanning the barcode directly, or register a new product.'
+                : 'Select another category tab or add new products to your menu.'}
+            </p>
           </div>
         ) : (
           visibleProducts.map((prod) => {

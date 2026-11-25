@@ -125,6 +125,34 @@ export function App() {
       const timeDiff = currentTime - lastKeyTimeRef.current;
       lastKeyTimeRef.current = currentTime;
 
+      // Global Cashier Function Hotkeys (F2: Camera Scan, F4: Held Orders, F8: Checkout, Escape: Close Modals)
+      if (e.key === 'F2') {
+        e.preventDefault();
+        setIsScannerOpen(true);
+        return;
+      }
+      if (e.key === 'F4') {
+        e.preventDefault();
+        setIsHeldOrdersOpen(true);
+        return;
+      }
+      if (e.key === 'F8') {
+        e.preventDefault();
+        if (useCartStore.getState().items.length > 0) {
+          setIsCheckoutOpen(true);
+        } else {
+          toast.info('Cart is Empty', 'Add dishes before opening checkout.');
+        }
+        return;
+      }
+      if (e.key === 'Escape') {
+        setIsCheckoutOpen(false);
+        setIsScannerOpen(false);
+        setIsHeldOrdersOpen(false);
+        setIsAddProductOpen(false);
+        setIsSyncModalOpen(false);
+      }
+
       // Reset buffer if delay between keystrokes exceeds 180ms (typical human typing speed)
       if (timeDiff > 180) {
         barcodeBufferRef.current = '';

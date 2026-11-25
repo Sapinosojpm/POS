@@ -18,6 +18,7 @@ import { db } from '../core/db';
 import { printerService } from '../core/hardware/printer';
 import { toast } from '../store/useToastStore';
 import { useAuthStore } from '../store/useAuthStore';
+import { playCashRegisterSound, triggerHaptic } from '../core/hardware/scannerFeedback';
 import type { Order, OrderItem, PaymentMethod } from '../types';
 
 interface CheckoutModalProps {
@@ -145,6 +146,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose, o
         price: item.product.price,
         quantity: item.quantity,
         subtotal: item.product.price * item.quantity,
+        notes: item.notes,
       }));
 
       await db.transaction('rw', db.orders, db.orderItems, db.products, db.syncQueue, async () => {
@@ -171,6 +173,8 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose, o
       });
 
       setCompletedOrder(newOrder);
+      playCashRegisterSound();
+      triggerHaptic('success');
 
       if (autoPrint) {
         await printerService.printReceipt(newOrder, orderItems);
@@ -195,7 +199,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose, o
   const handleShareReceipt = async () => {
     if (!completedOrder) return;
     const itemsSummary = items
-      .map((i) => `${i.quantity}x ${i.product.name} (${currency}${(i.product.price * i.quantity).toFixed(2)})`)
+      .map((i) => `${i.quantity}x ${i.product.name}${i.notes ? ` (${i.notes})` : ''} (${currency}${(i.product.price * i.quantity).toFixed(2)})`)
       .join('\n');
     const shareText = `🏪 ${settings.storeName}\n🧾 Order: ${completedOrder.orderNumber}\n📅 Date: ${new Date(completedOrder.createdAt).toLocaleString()}\n\nItems:\n${itemsSummary}\n\nTotal Paid: ${currency}${completedOrder.total.toFixed(2)} (${completedOrder.paymentMethod})\nChange Due: ${currency}${completedOrder.changeDue.toFixed(2)}\n\nThank you for your purchase!`;
 
@@ -230,6 +234,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose, o
       price: item.product.price,
       quantity: item.quantity,
       subtotal: item.product.price * item.quantity,
+      notes: item.notes,
     }));
     try {
       await printerService.printReceipt(completedOrder, orderItems);
@@ -384,21 +389,21 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose, o
 
             {paymentMethod === 'CASH' && (
               <>
-                {/* Quick Cash Denomination Buttons */}
-                <div className="flex gap-1.5">
+                {/* Quick Cash Denomination Buttons (Philippine Peso Banknotes) */}
+                <div className="grid grid-cols-4 sm:grid-cols-7 gap-1.5">
                   <button
                     type="button"
                     onClick={() => handleQuickCash(total)}
-                    className="flex-1 h-9 px-1 bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold text-xs rounded-lg border border-blue-200/90 active:scale-95 transition shadow-2xs tabular-nums"
+                    className="h-9 px-1 bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold text-xs rounded-lg border border-blue-200/90 active:scale-95 transition shadow-2xs tabular-nums flex items-center justify-center col-span-2 sm:col-span-1"
                   >
                     Exact ({currency}{Math.ceil(total)})
                   </button>
-                  {[50, 100, 500, 1000].map((bill) => (
+                  {[20, 50, 100, 200, 500, 1000].map((bill) => (
                     <button
                       key={bill}
                       type="button"
                       onClick={() => handleQuickCash(bill)}
-                      className="flex-1 h-9 px-1 bg-slate-100 hover:bg-slate-200/90 text-slate-700 font-bold text-xs rounded-lg border border-slate-200/80 active:scale-95 transition shadow-2xs tabular-nums"
+                      className="h-9 px-1 bg-slate-100 hover:bg-slate-200/90 text-slate-700 font-bold text-xs rounded-lg border border-slate-200/80 active:scale-95 transition shadow-2xs tabular-nums flex items-center justify-center"
                     >
                       {currency}{bill}
                     </button>

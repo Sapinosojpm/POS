@@ -76,6 +76,9 @@ QTY  ITEM                  TOTAL
       const qty = `${item.quantity}x`.padEnd(4, ' ');
       const price = `${cur}${item.subtotal.toFixed(2)}`.padStart(8, ' ');
       text += `${qty} ${name} ${price}\n`;
+      if (item.notes) {
+        text += `     * NOTE: ${item.notes}\n`;
+      }
     });
 
     const totalQty = items.reduce((acc, i) => acc + i.quantity, 0);

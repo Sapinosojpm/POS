@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { Search, Bell, Wifi, WifiOff, Scan, PackageOpen, RefreshCw, AlertTriangle, ShoppingBag, Check, Menu, LogOut } from 'lucide-react';
+import { Search, Bell, Wifi, WifiOff, Scan, PackageOpen, RefreshCw, AlertTriangle, ShoppingBag, Check, Menu, LogOut, Volume2, VolumeX } from 'lucide-react';
 import { useSyncStore } from '../core/sync/syncStore';
 import { db } from '../core/db';
 import { useAuthStore } from '../store/useAuthStore';
 import { toast } from '../store/useToastStore';
+import { isSoundMuted, setSoundMuted } from '../core/hardware/scannerFeedback';
 
 interface HeaderProps {
   searchQuery: string;
@@ -39,6 +40,26 @@ export const Header: React.FC<HeaderProps> = ({
   const { status, pendingCount } = useSyncStore();
   const { currentUser, logout } = useAuthStore();
   const heldOrdersCount = useLiveQuery(() => db.heldOrders.count(), []) || 0;
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const [muted, setMuted] = useState(() => isSoundMuted());
+
+  // Pro Cashier Hotkey Listener: press '/' or 'F1' to focus search
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const activeTag = document.activeElement?.tagName.toLowerCase();
+      const isInputFocused = activeTag === 'input' || activeTag === 'textarea' || activeTag === 'select';
+
+      if ((e.key === '/' || e.key === 'F1') && !isInputFocused) {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+        searchInputRef.current?.select();
+      } else if (e.key === 'Escape' && document.activeElement === searchInputRef.current) {
+        searchInputRef.current?.blur();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   return (
     <header className="h-16 bg-white border-b border-slate-200 px-3 sm:px-4 lg:px-5 flex items-center justify-between shrink-0 select-none gap-2">
@@ -58,19 +79,24 @@ export const Header: React.FC<HeaderProps> = ({
         <div className="relative flex-1 min-w-0 max-w-[260px] xl:max-w-xs">
           <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
           <input
+            ref={searchInputRef}
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search menu or scan..."
-            className="w-full bg-slate-50 border border-slate-200 pl-8 sm:pl-9 pr-3 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm placeholder:text-slate-400 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition"
+            placeholder="Search menu or scan (/)..."
+            className="w-full bg-slate-50 border border-slate-200 pl-8 sm:pl-9 pr-7 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm placeholder:text-slate-400 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition"
           />
-          {searchQuery && (
+          {searchQuery ? (
             <button
               onClick={() => setSearchQuery('')}
               className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-xs font-bold"
             >
               ✕
             </button>
+          ) : (
+            <span className="hidden xl:inline-block absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] font-mono font-bold text-slate-400 bg-slate-100 border border-slate-200 px-1.5 py-0.2 rounded pointer-events-none">
+              /
+            </span>
           )}
         </div>
 
@@ -172,6 +198,25 @@ export const Header: React.FC<HeaderProps> = ({
               <span className="hidden md:inline">{pendingCount > 0 ? `Offline · ${pendingCount} queued` : 'Offline'}</span>
             </>
           )}
+        </button>
+
+        {/* Audio Sound Feedback Mute/Unmute Toggle */}
+        <button
+          type="button"
+          onClick={() => {
+            const next = !muted;
+            setMuted(next);
+            setSoundMuted(next);
+            toast.info(next ? 'Audio Silenced' : 'Audio Enabled', next ? 'Barcode beeps & chimes muted' : 'Scanner beeps & chimes active');
+          }}
+          className={`w-8 h-8 rounded-lg border flex items-center justify-center transition active:scale-95 shrink-0 ${
+            muted
+              ? 'bg-amber-50 text-amber-600 border-amber-200 hover:bg-amber-100'
+              : 'bg-slate-50 text-slate-600 border-slate-200 hover:text-blue-600 hover:bg-blue-50'
+          }`}
+          title={muted ? 'Unmute scanner & POS audio' : 'Mute scanner & POS audio'}
+        >
+          {muted ? <VolumeX className="w-4 h-4 text-amber-600" /> : <Volume2 className="w-4 h-4" />}
         </button>
 
         {/* Premium Notification Stack Bell Button */}

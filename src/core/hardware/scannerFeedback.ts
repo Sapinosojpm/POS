@@ -4,6 +4,22 @@
  */
 
 let audioCtx: AudioContext | null = null;
+let isAudioMuted = false;
+
+try {
+  isAudioMuted = localStorage.getItem('pos_sound_muted') === 'true';
+} catch {}
+
+export function isSoundMuted(): boolean {
+  return isAudioMuted;
+}
+
+export function setSoundMuted(muted: boolean): void {
+  isAudioMuted = muted;
+  try {
+    localStorage.setItem('pos_sound_muted', muted ? 'true' : 'false');
+  } catch {}
+}
 
 function getAudioContext(): AudioContext | null {
   try {
@@ -26,6 +42,7 @@ function getAudioContext(): AudioContext | null {
  * Positive high-frequency beep (880 Hz, 80ms) for successful barcode detection
  */
 export function playScanSuccessSound(): void {
+  if (isAudioMuted) return;
   try {
     const ctx = getAudioContext();
     if (!ctx) return;
@@ -53,6 +70,7 @@ export function playScanSuccessSound(): void {
  * Low-frequency warning double buzz (220 Hz) for unregistered barcode
  */
 export function playScanErrorSound(): void {
+  if (isAudioMuted) return;
   try {
     const ctx = getAudioContext();
     if (!ctx) return;
@@ -76,6 +94,40 @@ export function playScanErrorSound(): void {
 
     playTone(0);
     playTone(0.11);
+  } catch {
+    // Non-blocking
+  }
+}
+
+/**
+ * Cash register chime for completed checkout
+ */
+export function playCashRegisterSound(): void {
+  if (isAudioMuted) return;
+  try {
+    const ctx = getAudioContext();
+    if (!ctx) return;
+
+    const playBell = (freq: number, delay: number) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(freq, ctx.currentTime + delay);
+
+      gain.gain.setValueAtTime(0.2, ctx.currentTime + delay);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + delay + 0.28);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      osc.start(ctx.currentTime + delay);
+      osc.stop(ctx.currentTime + delay + 0.28);
+    };
+
+    playBell(523.25, 0);    // C5
+    playBell(659.25, 0.09); // E5
+    playBell(783.99, 0.18); // G5
   } catch {
     // Non-blocking
   }

@@ -29,6 +29,7 @@ interface CartState {
   addItem: (product: Product) => void;
   removeItem: (productId: string) => void;
   updateQuantity: (productId: string, quantity: number) => void;
+  updateItemNotes: (productId: string, notes: string) => void;
   clearCart: () => void;
   setPaymentMethod: (method: PaymentMethod) => void;
   setAmountTendered: (amount: number) => void;
@@ -87,6 +88,14 @@ export const useCartStore = create<CartState>((set, get) => ({
     set((state) => ({
       items: state.items.map((item) =>
         item.product.id === productId ? { ...item, quantity } : item
+      ),
+    }));
+  },
+
+  updateItemNotes: (productId: string, notes: string) => {
+    set((state) => ({
+      items: state.items.map((item) =>
+        item.product.id === productId ? { ...item, notes: notes.trim() } : item
       ),
     }));
   },
