@@ -188,6 +188,14 @@
   - Added "Auto-Print Thermal Receipt on Checkout" toggle switch in Hardware settings to store permanent preferences.
 - [x] Verified build (`npm run build`) and synced assets to Capacitor Android (`npx cap sync`).
 
+## Phase 4.18: Pro Cashier UI/UX & Hotkeys Engine
+- [x] Inline item notes and special instructions in `CartView.tsx` with quick preset chips (`Less ice`, `No spicy`, `Extra sauce`, `To-go`, `Well done`).
+- [x] Full Philippine Peso banknote denomination set in `CheckoutModal.tsx` (`[Exact]`, `₱20`, `₱50`, `₱100`, `₱200`, `₱500`, `₱1000`).
+- [x] Cashier hotkeys & instant search autofocus (`/` or `F1` for Search, `F2` for Camera Scan, `F4` for Held Orders, `F8` for Checkout, `Escape` to close modals).
+- [x] Audio mute/unmute toggle in `Header.tsx` with persistent localStorage state + pleasant checkout completion chime (`playCashRegisterSound`).
+- [x] Interactive search match counter and illustrated empty state in `ProductCatalog.tsx`.
+- [x] Thermal receipt formatting update to print itemized notes on slips (`* NOTE: ...`).
+
 ## Phase 5: PostgreSQL Backend Infrastructure & Sync Gateway
 - [x] Create PostgreSQL schema `sql/postgres_schema.sql` defining relational tables (`branches`, `devices`, `categories`, `products`, `orders`, `order_items`, `shifts`, `stock_ledger`) with UUID keys, indexes, and updated_at triggers.
 - [x] Implement standalone Node.js sync server (`server/index.mjs`) implementing `POST /api/sync/push` (batch idempotent PostgreSQL upserts) and `GET /api/sync/pull` (delta changes since timestamp).
