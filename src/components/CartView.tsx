@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { CreditCard, Clock, Banknote, ArrowRight, ShoppingBag, Trash2, Plus, Minus, Award, X, PauseCircle, PackageOpen, Smartphone, Wallet, Utensils, ChevronDown, ChevronUp, User, PanelRightClose, MessageSquare } from 'lucide-react';
+import { CreditCard, Clock, Banknote, ArrowRight, ShoppingBag, Trash2, Plus, Minus, X, PauseCircle, PackageOpen, Smartphone, Wallet, Utensils, ChevronDown, ChevronUp, User, PanelRightClose, MessageSquare } from 'lucide-react';
 import { useCartStore } from '../store/useCartStore';
 import { useSettingsStore } from '../store/useSettingsStore';
 import { DiscountModal } from './DiscountModal';
@@ -507,24 +507,28 @@ export const CartView: React.FC<CartViewProps> = ({ onOpenCheckout, onClose, onT
             type="button"
             disabled={items.length === 0}
             onClick={() => setIsDiscountModalOpen(true)}
-            className="w-full flex items-center justify-between px-2.5 py-2 rounded-lg bg-amber-50/70 hover:bg-amber-100/90 border border-amber-200 text-amber-900 text-xs font-bold transition disabled:opacity-50 disabled:pointer-events-none active:scale-[0.99]"
+            className="w-full flex items-center justify-between px-3 py-2 rounded-lg bg-amber-50/70 hover:bg-amber-100/90 border border-amber-200 text-amber-900 text-xs font-bold transition disabled:opacity-50 disabled:pointer-events-none active:scale-[0.99]"
           >
-            <div className="flex items-center gap-1.5">
-              <Award className="w-3.5 h-3.5 text-amber-600" />
-              <span>Senior / PWD / Promo</span>
+            <div className="flex items-center gap-2">
+              <span className="text-[9px] font-bold tracking-wider uppercase px-1.5 py-0.5 rounded bg-amber-200/80 text-amber-900">
+                PROMO
+              </span>
+              <span>Senior / PWD / Voucher</span>
             </div>
-            <span className="text-[10px] text-amber-800 bg-amber-200/60 px-1.5 py-0.5 rounded font-semibold">
-              + Apply
+            <span className="text-[10px] text-amber-900 bg-white border border-amber-300 px-2 py-0.5 rounded font-semibold shadow-2xs">
+              + Add Discount
             </span>
           </button>
         ) : (
           <div className="p-2.5 rounded-lg bg-amber-50 border border-amber-200 space-y-1">
             <div className="flex items-center justify-between text-xs font-bold text-amber-950">
-              <div className="flex items-center gap-1.5 min-w-0">
-                <Award className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+              <div className="flex items-center gap-2 min-w-0">
+                <span className="text-[9px] font-bold tracking-wider uppercase px-1.5 py-0.5 rounded bg-amber-200/80 text-amber-900 shrink-0">
+                  APPLIED
+                </span>
                 <span className="truncate">{breakdown.discountLabel}</span>
               </div>
-              <div className="flex items-center gap-1.5 shrink-0">
+              <div className="flex items-center gap-2 shrink-0">
                 <button
                   type="button"
                   onClick={() => setIsDiscountModalOpen(true)}

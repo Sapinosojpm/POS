@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { X, Award, Percent, Tag, Users, Check, Sparkles } from 'lucide-react';
 import { useCartStore } from '../store/useCartStore';
+import { useSettingsStore } from '../store/useSettingsStore';
 import { toast } from '../store/useToastStore';
 import { playScanSuccessSound, triggerHaptic } from '../core/hardware/scannerFeedback';
 import type { CartDiscount } from '../types';
@@ -13,6 +13,9 @@ interface DiscountModalProps {
 export const DiscountModal: React.FC<DiscountModalProps> = ({ isOpen, onClose }) => {
   const { discount, setDiscount, clearDiscount, getSubtotal, currency } = useCartStore();
   const subtotal = getSubtotal();
+  const isTaxEnabled = useSettingsStore((state) => state.settings.enableTax ?? true);
+  const taxRate = (useSettingsStore((state) => state.settings.taxRate ?? 12) / 100);
+  const vatDivisor = 1 + taxRate;
 
   const [activeTab, setActiveTab] = useState<'statutory' | 'percent' | 'fixed'>('statutory');
 
@@ -63,6 +66,40 @@ export const DiscountModal: React.FC<DiscountModalProps> = ({ isOpen, onClose })
 
   if (!isOpen) return null;
 
+  // Real-time calculation preview
+  let previewSavings = 0;
+  let previewVatExempt = 0;
+  let previewNewTotal = subtotal;
+
+  if (activeTab === 'statutory') {
+    const guests = Math.max(1, totalGuests);
+    const eligible = Math.max(1, Math.min(seniorCount, guests));
+    const ratio = eligible / guests;
+    const seniorGross = subtotal * ratio;
+    const regularGross = subtotal - seniorGross;
+
+    if (!isTaxEnabled) {
+      const disc = Math.round(seniorGross * 0.2 * 100) / 100;
+      previewSavings = disc;
+      previewNewTotal = Math.max(0, Math.round((subtotal - disc) * 100) / 100);
+    } else {
+      const seniorNetOfVat = Math.round((seniorGross / vatDivisor) * 100) / 100;
+      previewVatExempt = Math.round((seniorGross - seniorNetOfVat) * 100) / 100;
+      const disc = Math.round(seniorNetOfVat * 0.2 * 100) / 100;
+      previewSavings = Math.round((disc + previewVatExempt) * 100) / 100;
+      const seniorDue = Math.round((seniorNetOfVat - disc) * 100) / 100;
+      previewNewTotal = Math.max(0, Math.round((seniorDue + regularGross) * 100) / 100);
+    }
+  } else if (activeTab === 'percent') {
+    const pct = Math.min(100, Math.max(0, percentVal));
+    previewSavings = Math.round(((subtotal * pct) / 100) * 100) / 100;
+    previewNewTotal = Math.max(0, Math.round((subtotal - previewSavings) * 100) / 100);
+  } else if (activeTab === 'fixed') {
+    const val = Math.max(0, fixedVal);
+    previewSavings = Math.min(subtotal, val);
+    previewNewTotal = Math.max(0, Math.round((subtotal - previewSavings) * 100) / 100);
+  }
+
   const handleApply = (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -76,7 +113,7 @@ export const DiscountModal: React.FC<DiscountModalProps> = ({ isOpen, onClose })
         type: statutoryType,
         label: statutoryType === 'SENIOR' ? 'Senior Citizen (20%)' : 'PWD (20%)',
         value: 20,
-        customerName: customerName.trim() || 'Senior / PWD Guest',
+        customerName: customerName.trim() || (statutoryType === 'SENIOR' ? 'Senior Guest' : 'PWD Guest'),
         idNumber: idNumber.trim(),
         totalGuests: Math.max(1, totalGuests),
         seniorCount: Math.max(1, Math.min(seniorCount, totalGuests)),
@@ -87,7 +124,7 @@ export const DiscountModal: React.FC<DiscountModalProps> = ({ isOpen, onClose })
       triggerHaptic('success');
       toast.success(
         `${newDiscount.label} Applied`,
-        '12% VAT exemption and 20% statutory discount computed.'
+        'Statutory discount and VAT exemption computed for audit ledger.'
       );
     } else if (activeTab === 'percent') {
       if (percentVal <= 0 || percentVal > 100) {
@@ -134,175 +171,206 @@ export const DiscountModal: React.FC<DiscountModalProps> = ({ isOpen, onClose })
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/80 backdrop-blur-sm animate-fade-in">
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl max-w-md w-full overflow-hidden text-slate-800 flex flex-col">
-        {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 bg-slate-50/70">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-blue-600/10 border border-blue-500/20 flex items-center justify-center text-blue-600">
-              <Award className="w-5 h-5" />
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl max-w-lg w-full overflow-hidden text-slate-800 flex flex-col">
+        {/* Header - Clean Typographic Layout (No Decorative Icons) */}
+        <div className="flex items-start justify-between px-6 py-4 border-b border-slate-100 bg-slate-50/80">
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-bold tracking-wider uppercase text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
+                Statutory & Promos
+              </span>
+              {discount && (
+                <span className="text-[10px] font-bold tracking-wider uppercase text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
+                  Active in Cart
+                </span>
+              )}
             </div>
-            <div>
-              <h3 className="font-bold text-sm text-slate-900 tracking-wide">Discounts & Promos</h3>
-              <p className="text-[11px] text-slate-500">
-                Philippine Statutory (RA 9994 / 10754) or Custom Promos
-              </p>
-            </div>
+            <h3 className="font-bold text-lg text-slate-900 tracking-tight mt-1">Discounts & Deductions</h3>
+            <p className="text-xs text-slate-500">
+              Philippine statutory benefits (RA 9994 / RA 10754) or custom store vouchers
+            </p>
           </div>
           <button
+            type="button"
             onClick={onClose}
-            className="w-8 h-8 rounded-lg bg-slate-200/60 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center transition-colors"
+            className="px-2.5 py-1 rounded-lg text-xs font-semibold text-slate-500 hover:text-slate-800 hover:bg-slate-200/60 transition"
+            aria-label="Close"
           >
-            <X className="w-4 h-4" />
+            Esc
           </button>
         </div>
 
-        {/* Tab Segmented Control */}
-        <div className="p-3 bg-slate-100/70 border-b border-slate-200/80 flex items-center gap-1.5">
-          <button
-            type="button"
-            onClick={() => setActiveTab('statutory')}
-            className={`flex-1 py-2 px-2.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
-              activeTab === 'statutory'
-                ? 'bg-blue-600 text-white shadow-xs'
-                : 'text-slate-600 hover:bg-slate-200/60'
-            }`}
-          >
-            <Award className="w-3.5 h-3.5" />
-            <span>Senior / PWD</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveTab('percent')}
-            className={`flex-1 py-2 px-2.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
-              activeTab === 'percent'
-                ? 'bg-blue-600 text-white shadow-xs'
-                : 'text-slate-600 hover:bg-slate-200/60'
-            }`}
-          >
-            <Percent className="w-3.5 h-3.5" />
-            <span>Percent (%)</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveTab('fixed')}
-            className={`flex-1 py-2 px-2.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
-              activeTab === 'fixed'
-                ? 'bg-blue-600 text-white shadow-xs'
-                : 'text-slate-600 hover:bg-slate-200/60'
-            }`}
-          >
-            <Tag className="w-3.5 h-3.5" />
-            <span>Fixed Voucher</span>
-          </button>
+        {/* Tab Segmented Control - Pure Typography */}
+        <div className="p-2.5 bg-slate-100/80 border-b border-slate-200/70">
+          <div className="grid grid-cols-3 gap-1 bg-slate-200/60 p-1 rounded-xl">
+            <button
+              type="button"
+              onClick={() => setActiveTab('statutory')}
+              className={`py-2 px-2 text-xs font-bold rounded-lg transition-all ${
+                activeTab === 'statutory'
+                  ? 'bg-white text-blue-700 shadow-xs border border-slate-200/80'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              Senior / PWD
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab('percent')}
+              className={`py-2 px-2 text-xs font-bold rounded-lg transition-all ${
+                activeTab === 'percent'
+                  ? 'bg-white text-blue-700 shadow-xs border border-slate-200/80'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              Percentage (%)
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab('fixed')}
+              className={`py-2 px-2 text-xs font-bold rounded-lg transition-all ${
+                activeTab === 'fixed'
+                  ? 'bg-white text-blue-700 shadow-xs border border-slate-200/80'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              Fixed Voucher
+            </button>
+          </div>
         </div>
 
         {/* Tab Content Form */}
-        <form onSubmit={handleApply} className="p-5 space-y-4">
+        <form onSubmit={handleApply} className="p-6 space-y-4 max-h-[75vh] overflow-y-auto">
           {/* TAB 1: SENIOR CITIZEN / PWD */}
           {activeTab === 'statutory' && (
-            <div className="space-y-3.5 animate-fade-in">
-              {/* Type Switcher */}
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  type="button"
-                  onClick={() => setStatutoryType('SENIOR')}
-                  className={`py-2 px-3 rounded-xl border text-xs font-bold transition-all flex items-center justify-center gap-2 ${
-                    statutoryType === 'SENIOR'
-                      ? 'bg-amber-50 border-amber-400 text-amber-900 ring-2 ring-amber-400/30'
-                      : 'border-slate-200 text-slate-600 hover:bg-slate-50'
-                  }`}
-                >
-                  <span>👴 Senior Citizen</span>
-                  {statutoryType === 'SENIOR' && <Check className="w-3.5 h-3.5 text-amber-600" />}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setStatutoryType('PWD')}
-                  className={`py-2 px-3 rounded-xl border text-xs font-bold transition-all flex items-center justify-center gap-2 ${
-                    statutoryType === 'PWD'
-                      ? 'bg-blue-50 border-blue-400 text-blue-900 ring-2 ring-blue-400/30'
-                      : 'border-slate-200 text-slate-600 hover:bg-slate-50'
-                  }`}
-                >
-                  <span>♿ PWD Discount</span>
-                  {statutoryType === 'PWD' && <Check className="w-3.5 h-3.5 text-blue-600" />}
-                </button>
+            <div className="space-y-4 animate-fade-in">
+              {/* Statutory Type Switcher - Professional Cards (No Emojis) */}
+              <div>
+                <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2">
+                  Statutory Classification
+                </label>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setStatutoryType('SENIOR')}
+                    className={`p-3 rounded-xl border text-left transition-all relative ${
+                      statutoryType === 'SENIOR'
+                        ? 'bg-blue-50/60 border-blue-600 ring-2 ring-blue-600/20 text-slate-900'
+                        : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-xs">Senior Citizen</span>
+                      {statutoryType === 'SENIOR' && (
+                        <span className="text-[10px] font-bold text-blue-600 bg-blue-100/70 px-1.5 py-0.5 rounded">
+                          Selected
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-[11px] text-slate-500 mt-0.5">Republic Act 9994</p>
+                    <p className="text-[10px] font-semibold text-emerald-700 mt-1">20% Off + VAT-Exempt</p>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setStatutoryType('PWD')}
+                    className={`p-3 rounded-xl border text-left transition-all relative ${
+                      statutoryType === 'PWD'
+                        ? 'bg-blue-50/60 border-blue-600 ring-2 ring-blue-600/20 text-slate-900'
+                        : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-xs">PWD Discount</span>
+                      {statutoryType === 'PWD' && (
+                        <span className="text-[10px] font-bold text-blue-600 bg-blue-100/70 px-1.5 py-0.5 rounded">
+                          Selected
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-[11px] text-slate-500 mt-0.5">Republic Act 10754</p>
+                    <p className="text-[10px] font-semibold text-emerald-700 mt-1">20% Off + VAT-Exempt</p>
+                  </button>
+                </div>
               </div>
 
-              {/* Legal Note Pill */}
-              <div className="p-2.5 bg-amber-50/60 border border-amber-200/70 rounded-xl flex items-start gap-2">
-                <Sparkles className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-                <p className="text-[11px] text-amber-900 leading-tight">
-                  <strong className="font-semibold">Statutory Rule:</strong> 12% VAT is removed first,
-                  followed by 20% discount on the net amount.
+              {/* Statutory Legal Rule Callout (No Sparkles Icon) */}
+              <div className="p-3 bg-amber-50/70 border-l-4 border-amber-500 rounded-r-xl">
+                <p className="text-[11px] font-bold text-amber-950 uppercase tracking-wide">
+                  Statutory Rule (Philippine Tax Code)
+                </p>
+                <p className="text-xs text-amber-900/90 mt-0.5 leading-relaxed">
+                  12% VAT is extracted first from the gross amount, followed by a 20% statutory discount computed on the net VAT-exempt base.
                 </p>
               </div>
 
-              {/* ID Number & Name */}
-              <div className="space-y-2">
+              {/* ID Number & Customer Name */}
+              <div className="space-y-3">
                 <div>
                   <div className="flex items-center justify-between mb-1">
-                    <label className="text-[11px] font-bold text-slate-600 uppercase tracking-wider">
-                      {statutoryType === 'SENIOR' ? 'Senior OSCA ID No.' : 'PWD Card ID No.'} *
+                    <label className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">
+                      {statutoryType === 'SENIOR' ? 'Senior OSCA ID No.' : 'PWD Card ID No.'} <span className="text-rose-500">*</span>
                     </label>
                     <button
                       type="button"
-                      onClick={() => setIdNumber(`SC-${Date.now().toString().slice(-6)}`)}
-                      className="text-[10px] text-blue-600 hover:text-blue-800 font-semibold"
+                      onClick={() => setIdNumber(statutoryType === 'SENIOR' ? `SC-${Date.now().toString().slice(-6)}` : `PWD-${Date.now().toString().slice(-6)}`)}
+                      className="text-[11px] text-blue-600 hover:text-blue-800 font-semibold"
                     >
-                      + Quick Walk-In ID
+                      Auto-Fill Walk-In ID
                     </button>
                   </div>
                   <input
                     type="text"
                     value={idNumber}
                     onChange={(e) => setIdNumber(e.target.value)}
-                    placeholder="e.g. 1234-5678-90"
+                    placeholder="Enter ID number for BIR audit trail (e.g. 1234-5678-90)"
                     required
-                    className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3.5 py-2 text-xs text-slate-800 font-mono focus:ring-2 focus:ring-blue-500 focus:bg-white"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3.5 py-2.5 text-xs text-slate-900 font-mono tracking-wide focus:ring-2 focus:ring-blue-500 focus:bg-white focus:border-blue-500 transition"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-bold text-slate-600 uppercase tracking-wider mb-1">
-                    Customer Full Name (Optional)
+                  <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">
+                    Cardholder Full Name (Optional)
                   </label>
                   <input
                     type="text"
                     value={customerName}
                     onChange={(e) => setCustomerName(e.target.value)}
                     placeholder="e.g. Maria Santos"
-                    className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3.5 py-2 text-xs text-slate-800 focus:ring-2 focus:ring-blue-500 focus:bg-white"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3.5 py-2.5 text-xs text-slate-900 focus:ring-2 focus:ring-blue-500 focus:bg-white focus:border-blue-500 transition"
                   />
                 </div>
               </div>
 
-              {/* Shared Dining Stepper (Pax calculation) */}
-              <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
-                <div className="flex items-center justify-between text-xs font-bold text-slate-700">
-                  <span className="flex items-center gap-1.5">
-                    <Users className="w-3.5 h-3.5 text-slate-500" />
-                    Bill Sharing / Pax Calculation
-                  </span>
-                  <span className="text-[11px] text-blue-600 font-semibold">
+              {/* Bill Sharing / Pax Calculation (No User Icon) */}
+              <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <span className="text-xs font-bold text-slate-800">Bill Sharing (Pax Split)</span>
+                    <p className="text-[11px] text-slate-500">
+                      Discount is computed proportionally for group dining
+                    </p>
+                  </div>
+                  <span className="text-xs font-mono font-bold text-blue-700 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded">
                     {Math.round((seniorCount / totalGuests) * 100)}% of Bill
                   </span>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3 text-xs">
+                <div className="grid grid-cols-2 gap-3 pt-1">
                   <div>
-                    <label className="block text-[10px] text-slate-500 font-medium mb-1">
-                      Senior Guests
+                    <label className="block text-[10px] text-slate-600 font-semibold uppercase tracking-wider mb-1">
+                      {statutoryType === 'SENIOR' ? 'Senior Guests' : 'PWD Guests'}
                     </label>
-                    <div className="flex items-center border border-slate-200 bg-white rounded-lg overflow-hidden">
+                    <div className="flex items-center border border-slate-300 bg-white rounded-lg overflow-hidden shadow-2xs">
                       <button
                         type="button"
                         onClick={() => setSeniorCount(Math.max(1, seniorCount - 1))}
-                        className="px-2.5 py-1 text-slate-600 hover:bg-slate-100 font-bold"
+                        className="w-10 h-9 flex items-center justify-center text-slate-600 hover:bg-slate-100 font-bold text-base transition"
                       >
-                        -
+                        –
                       </button>
-                      <span className="flex-1 text-center font-bold text-slate-800">
+                      <span className="flex-1 text-center font-bold text-slate-900 font-mono text-sm">
                         {seniorCount}
                       </span>
                       <button
@@ -312,7 +380,7 @@ export const DiscountModal: React.FC<DiscountModalProps> = ({ isOpen, onClose })
                           setSeniorCount(next);
                           if (next > totalGuests) setTotalGuests(next);
                         }}
-                        className="px-2.5 py-1 text-slate-600 hover:bg-slate-100 font-bold"
+                        className="w-10 h-9 flex items-center justify-center text-slate-600 hover:bg-slate-100 font-bold text-base transition"
                       >
                         +
                       </button>
@@ -320,24 +388,24 @@ export const DiscountModal: React.FC<DiscountModalProps> = ({ isOpen, onClose })
                   </div>
 
                   <div>
-                    <label className="block text-[10px] text-slate-500 font-medium mb-1">
+                    <label className="block text-[10px] text-slate-600 font-semibold uppercase tracking-wider mb-1">
                       Total Group Guests
                     </label>
-                    <div className="flex items-center border border-slate-200 bg-white rounded-lg overflow-hidden">
+                    <div className="flex items-center border border-slate-300 bg-white rounded-lg overflow-hidden shadow-2xs">
                       <button
                         type="button"
                         onClick={() => setTotalGuests(Math.max(seniorCount, totalGuests - 1))}
-                        className="px-2.5 py-1 text-slate-600 hover:bg-slate-100 font-bold"
+                        className="w-10 h-9 flex items-center justify-center text-slate-600 hover:bg-slate-100 font-bold text-base transition"
                       >
-                        -
+                        –
                       </button>
-                      <span className="flex-1 text-center font-bold text-slate-800">
+                      <span className="flex-1 text-center font-bold text-slate-900 font-mono text-sm">
                         {totalGuests}
                       </span>
                       <button
                         type="button"
                         onClick={() => setTotalGuests(totalGuests + 1)}
-                        className="px-2.5 py-1 text-slate-600 hover:bg-slate-100 font-bold"
+                        className="w-10 h-9 flex items-center justify-center text-slate-600 hover:bg-slate-100 font-bold text-base transition"
                       >
                         +
                       </button>
@@ -350,21 +418,21 @@ export const DiscountModal: React.FC<DiscountModalProps> = ({ isOpen, onClose })
 
           {/* TAB 2: PERCENTAGE PROMO */}
           {activeTab === 'percent' && (
-            <div className="space-y-3.5 animate-fade-in">
+            <div className="space-y-4 animate-fade-in">
               <div>
-                <label className="block text-[11px] font-bold text-slate-600 uppercase tracking-wider mb-1.5">
-                  Preset Percentages
+                <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-2">
+                  Preset Percentage
                 </label>
-                <div className="grid grid-cols-5 gap-1.5">
+                <div className="grid grid-cols-5 gap-2">
                   {[5, 10, 15, 20, 50].map((val) => (
                     <button
                       key={val}
                       type="button"
                       onClick={() => setPercentVal(val)}
-                      className={`py-2 text-xs font-bold rounded-lg border transition ${
+                      className={`py-2.5 text-xs font-bold rounded-lg border transition ${
                         percentVal === val
                           ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
-                          : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                          : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
                       }`}
                     >
                       {val}%
@@ -374,7 +442,7 @@ export const DiscountModal: React.FC<DiscountModalProps> = ({ isOpen, onClose })
               </div>
 
               <div>
-                <label className="block text-[11px] font-bold text-slate-600 uppercase tracking-wider mb-1">
+                <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">
                   Custom Percentage (%)
                 </label>
                 <input
@@ -383,20 +451,20 @@ export const DiscountModal: React.FC<DiscountModalProps> = ({ isOpen, onClose })
                   max="100"
                   value={percentVal}
                   onChange={(e) => setPercentVal(Number(e.target.value) || 0)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3.5 py-2 text-xs text-slate-800 font-bold focus:ring-2 focus:ring-blue-500 focus:bg-white"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3.5 py-2.5 text-xs text-slate-900 font-bold focus:ring-2 focus:ring-blue-500 focus:bg-white focus:border-blue-500 transition"
                 />
               </div>
 
               <div>
-                <label className="block text-[11px] font-bold text-slate-600 uppercase tracking-wider mb-1">
-                  Promo Reason / Label
+                <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">
+                  Promo Reason / Campaign Label
                 </label>
                 <input
                   type="text"
                   value={percentLabel}
                   onChange={(e) => setPercentLabel(e.target.value)}
                   placeholder="e.g. Employee Discount, Grand Opening Promo"
-                  className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3.5 py-2 text-xs text-slate-800 focus:ring-2 focus:ring-blue-500 focus:bg-white"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3.5 py-2.5 text-xs text-slate-900 focus:ring-2 focus:ring-blue-500 focus:bg-white focus:border-blue-500 transition"
                 />
               </div>
             </div>
@@ -404,21 +472,21 @@ export const DiscountModal: React.FC<DiscountModalProps> = ({ isOpen, onClose })
 
           {/* TAB 3: FIXED VOUCHER */}
           {activeTab === 'fixed' && (
-            <div className="space-y-3.5 animate-fade-in">
+            <div className="space-y-4 animate-fade-in">
               <div>
-                <label className="block text-[11px] font-bold text-slate-600 uppercase tracking-wider mb-1.5">
+                <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-2">
                   Preset Voucher Amounts
                 </label>
-                <div className="grid grid-cols-4 gap-1.5">
+                <div className="grid grid-cols-4 gap-2">
                   {[20, 50, 100, 200].map((val) => (
                     <button
                       key={val}
                       type="button"
                       onClick={() => setFixedVal(val)}
-                      className={`py-2 text-xs font-bold rounded-lg border transition ${
+                      className={`py-2.5 text-xs font-bold rounded-lg border transition ${
                         fixedVal === val
                           ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
-                          : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                          : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
                       }`}
                     >
                       {currency}{val}
@@ -428,7 +496,7 @@ export const DiscountModal: React.FC<DiscountModalProps> = ({ isOpen, onClose })
               </div>
 
               <div>
-                <label className="block text-[11px] font-bold text-slate-600 uppercase tracking-wider mb-1">
+                <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">
                   Voucher Value ({currency})
                 </label>
                 <input
@@ -436,32 +504,54 @@ export const DiscountModal: React.FC<DiscountModalProps> = ({ isOpen, onClose })
                   min="1"
                   value={fixedVal}
                   onChange={(e) => setFixedVal(Number(e.target.value) || 0)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3.5 py-2 text-xs text-slate-800 font-bold focus:ring-2 focus:ring-blue-500 focus:bg-white"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3.5 py-2.5 text-xs text-slate-900 font-bold focus:ring-2 focus:ring-blue-500 focus:bg-white focus:border-blue-500 transition"
                 />
               </div>
 
               <div>
-                <label className="block text-[11px] font-bold text-slate-600 uppercase tracking-wider mb-1">
+                <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">
                   Voucher Code / Reference
                 </label>
                 <input
                   type="text"
                   value={fixedLabel}
                   onChange={(e) => setFixedLabel(e.target.value)}
-                  placeholder="e.g. GC-2024-50OFF"
-                  className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3.5 py-2 text-xs text-slate-800 focus:ring-2 focus:ring-blue-500 focus:bg-white"
+                  placeholder="e.g. GC-2026-50OFF"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3.5 py-2.5 text-xs text-slate-900 focus:ring-2 focus:ring-blue-500 focus:bg-white focus:border-blue-500 transition"
                 />
               </div>
             </div>
           )}
 
+          {/* Live Computation Preview Card */}
+          <div className="bg-slate-50 border border-slate-200 rounded-xl p-3.5 space-y-1.5 text-xs">
+            <div className="flex items-center justify-between text-slate-500 font-medium">
+              <span>Cart Subtotal (Gross)</span>
+              <span className="font-mono text-slate-700">{currency}{subtotal.toFixed(2)}</span>
+            </div>
+            {activeTab === 'statutory' && isTaxEnabled && previewVatExempt > 0 && (
+              <div className="flex items-center justify-between text-emerald-700 font-medium">
+                <span>VAT Exemption (12%)</span>
+                <span className="font-mono">-{currency}{previewVatExempt.toFixed(2)}</span>
+              </div>
+            )}
+            <div className="flex items-center justify-between text-rose-600 font-bold pt-1 border-t border-slate-200">
+              <span>Estimated Savings / Deduction</span>
+              <span className="font-mono text-sm">-{currency}{previewSavings.toFixed(2)}</span>
+            </div>
+            <div className="flex items-center justify-between text-slate-900 font-bold">
+              <span>Payable Net Total</span>
+              <span className="font-mono text-base text-blue-600">{currency}{previewNewTotal.toFixed(2)}</span>
+            </div>
+          </div>
+
           {/* Action Buttons */}
-          <div className="flex gap-2 pt-2 border-t border-slate-100">
+          <div className="flex items-center gap-2 pt-2 border-t border-slate-100">
             {discount && (
               <button
                 type="button"
                 onClick={handleRemove}
-                className="py-2.5 px-3 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold rounded-lg text-xs transition"
+                className="py-2.5 px-3 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold rounded-lg text-xs transition border border-rose-200"
               >
                 Remove
               </button>
@@ -476,9 +566,9 @@ export const DiscountModal: React.FC<DiscountModalProps> = ({ isOpen, onClose })
             <button
               type="submit"
               disabled={subtotal <= 0}
-              className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-bold rounded-lg text-xs shadow-sm transition active:scale-95"
+              className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-bold rounded-lg text-xs shadow-xs transition active:scale-[0.98]"
             >
-              Apply Discount
+              {previewSavings > 0 ? `Apply (–${currency}${previewSavings.toFixed(2)})` : 'Apply Discount'}
             </button>
           </div>
         </form>

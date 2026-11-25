@@ -1,5 +1,13 @@
 # Project Memory & Decisions Log (MEMORY.md)
 
+## Discount Modal Design & Typography (No Icons / No Emojis)
+- **User Mandate:** "make it better dont use icons"
+- **Clean Professional Aesthetics:**
+  - Removed decorative icons (`Award`, `Sparkles`, `Users`, `Tag`, `Percent`) and emojis (`👴`, `♿`).
+  - Switched to crisp typographic hierarchy, clean segmented controls, and professional compliance tags.
+  - Formatted statutory options with their official Republic Act references (`RA 9994` for Senior Citizen, `RA 10754` for PWD) with `20% Off + VAT-Exempt` badge.
+  - Added real-time savings preview card directly in the modal so cashiers can inspect Gross, VAT Exemption, Total Deduction, and Payable Net Total live before clicking Apply.
+
 ## Store Settings & Hardware Decisions
 - **Paper Width:** Default to **58mm (32 characters)** for portable Bluetooth printers and Sunmi/iMin handheld POS devices, with 80mm available.
 - **Currency Engine:** Unified across the entire app to Philippine Peso (`₱` / `PHP`) by default via `useCartStore` (`currency: '₱'`). All views—Product Catalog, Cart/Invoice summary, Checkout modal, and Inventory view—now dynamically render `{currency}` (₱).

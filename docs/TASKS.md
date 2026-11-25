@@ -196,6 +196,15 @@
 - [x] Interactive search match counter and illustrated empty state in `ProductCatalog.tsx`.
 - [x] Thermal receipt formatting update to print itemized notes on slips (`* NOTE: ...`).
 
+## Phase 4.19: Clean Typographic Discount Modal Overhaul (No Icons / No Emojis)
+- [x] Removed decorative ribbon, sparkles, and users icons; eliminated emojis (`👴`, `♿`) from statutory Senior / PWD buttons.
+- [x] Re-architected `DiscountModal.tsx` into a clean typographic design with modern segmented tabs (`Senior / PWD`, `Percentage (%)`, `Fixed Voucher`).
+- [x] Replaced emoji buttons with professional statutory cards displaying legal Republic Acts (`RA 9994` and `RA 10754`).
+- [x] Styled BIR statutory rule with an elegant left-accent compliance callout bar.
+- [x] Added real-time savings calculation preview card showing live Gross Subtotal, VAT Exemption, Total Deduction, and Payable Net Total before applying.
+- [x] Updated `CartView.tsx` discount trigger and active badge with sleek typography and zero icon clutter.
+- [x] Verified zero-error build (`npm run build`) and synced to Android (`npx cap sync`).
+
 ## Phase 5: PostgreSQL Backend Infrastructure & Sync Gateway
 - [x] Create PostgreSQL schema `sql/postgres_schema.sql` defining relational tables (`branches`, `devices`, `categories`, `products`, `orders`, `order_items`, `shifts`, `stock_ledger`) with UUID keys, indexes, and updated_at triggers.
 - [x] Implement standalone Node.js sync server (`server/index.mjs`) implementing `POST /api/sync/push` (batch idempotent PostgreSQL upserts) and `GET /api/sync/pull` (delta changes since timestamp).
