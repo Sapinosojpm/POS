@@ -47,6 +47,12 @@
   - **Pull Synchronization:** Smart Delta Polling strategy (on startup, on reconnect, 5-minute background intervals, and manual 'Force Sync' trigger) to conserve tablet battery and cellular bandwidth.
   - **Outbox Push Engine:** Dexie `sync_queue` background worker flushing batches of 50 events using client-generated UUIDv4 idempotency keys.
 
+- **GitHub Release v1.3.0 Publication (Nov 25, 2026):**
+  - Published release tag `v1.3.0` to both `EDGEPOINT-SOLUTIONS/POS` and `Sapinosojpm/POS`.
+  - Binary assets attached: `Universal_POS_v1.3.apk` and `Universal_POS_latest.apk` (5.2 MB, built on Nov 25, 2026).
+  - Delivered Pro Cashier UI/UX & Hotkeys Engine: inline cart item notes & presets, full Philippine banknote set (₱20-₱1000), cashier hotkeys (`/`, `F1`, `F2`, `F4`, `F8`, `Esc`), header sound mute/unmute toggle, cash register chime, enhanced search counter and illustrated empty state.
+  - Release URL: https://github.com/EDGEPOINT-SOLUTIONS/POS/releases/tag/v1.3.0
+
 - **GitHub Release v1.2.0 Publication (Nov 24, 2026):**
   - Published release tag `v1.2.0` to both `EDGEPOINT-SOLUTIONS/POS` and `Sapinosojpm/POS`.
   - Binary assets attached: `Universal_POS_v1.2.apk` and `Universal_POS_latest.apk` (5.2 MB, built on Nov 24, 2026).
