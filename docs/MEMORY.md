@@ -1,5 +1,19 @@
 # Project Memory & Decisions Log (MEMORY.md)
 
+## Multi-Industry Business Profiles & Confirmation Gate
+- **User Mandate:** "pag clinick ko ang ibang klase ng shop dapat nagiiba din ang pos at iba pang kailangan and dapat may confirm modal bago magchange type or mode"
+- **Confirmation Gate:**
+  - `SwitchBusinessModeModal.tsx` intercepts every business profile click in `SettingsView.tsx`.
+  - Explains the specific workflow changes before committing.
+  - Provides options to hot-swap Dexie sample products & categories and automatically update store branding / receipt headers.
+  - Automatically resets active cashier cart to prevent item mismatch.
+- **Industry Profile Implementations (`src/core/db/seedCatalogs.ts`):**
+  - **`RETAIL`:** Supermarket & Sari-Sari grocery items, barcode quick-scan focus, zero dining clutter, `OFFICIAL RECEIPT / RETAIL REGISTER` slip.
+  - **`RESTAURANT`:** Meals, Burgers, Pasta, Sides; enables Dine-In / Takeout tabs, Table # selection (Table 1-20 / VIP), kitchen notes, `GUEST CHECK / RESTAURANT BILL` slip.
+  - **`VAPE_SHOP`:** Pod systems, e-liquids, coils, disposables; 18+ statutory compliance indicator (RA 11900), nicotine strength tags (`3mg`, `6mg`, `Salt 25mg`), `SPECIALTY VAPE RECEIPT` slip.
+  - **`SERVICES`:** Salon, Barber, Spa, and Tech Repair; Specialist / Technician assignment, labor lines without strict inventory count limits, `SERVICE INVOICE & ACKNOWLEDGEMENT` slip.
+- **Visual Feedback:** Active profile badge rendered in `Header.tsx` (`Retail & Grocery`, `Restaurant & Cafe`, `Vape Lounge`, `Services & Salon`).
+
 ## Discount Modal Design & Typography (No Icons / No Emojis)
 - **User Mandate:** "make it better dont use icons"
 - **Clean Professional Aesthetics:**

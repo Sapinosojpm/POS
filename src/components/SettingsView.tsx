@@ -35,6 +35,9 @@ import { useAuthStore } from '../store/useAuthStore';
 import { printerService } from '../core/hardware/printer';
 import { playScanSuccessSound, playScanErrorSound, triggerHaptic } from '../core/hardware/scannerFeedback';
 import { BarcodeScannerModal } from './BarcodeScannerModal';
+import { SwitchBusinessModeModal } from './SwitchBusinessModeModal';
+import { switchBusinessCatalog } from '../core/db/seedCatalogs';
+import { useCartStore } from '../store/useCartStore';
 import { db } from '../core/db';
 import { seedDatabaseIfEmpty } from '../core/db/seed';
 import { toast } from '../store/useToastStore';
@@ -59,6 +62,41 @@ export const SettingsView: React.FC = () => {
   const [isScannerTestOpen, setIsScannerTestOpen] = useState(false);
   const [scannerTestCode, setScannerTestCode] = useState('');
   const [scannedResult, setScannedResult] = useState<string | null>(null);
+  const [pendingBusinessMode, setPendingBusinessMode] = useState<BusinessType | null>(null);
+
+  const handleConfirmBusinessModeSwitch = async (
+    targetMode: BusinessType,
+    replaceCatalog: boolean,
+    updateBranding: boolean
+  ) => {
+    const profile = await switchBusinessCatalog(targetMode, replaceCatalog);
+    useCartStore.getState().clearCart();
+
+    const updated: StoreSettings = {
+      ...formData,
+      businessType: targetMode,
+      enableDiningOptions: profile.enableDining,
+      receiptHeader: profile.receiptHeader,
+      receiptFooter: profile.receiptFooter,
+      ...(updateBranding
+        ? {
+            storeName: profile.defaultStoreName,
+            branchName: profile.defaultBranch,
+          }
+        : {}),
+    };
+
+    setFormData(updated);
+    updateSettings(updated);
+    playScanSuccessSound();
+    triggerHaptic('success');
+    toast.success(
+      `Switched to ${profile.title}`,
+      replaceCatalog
+        ? `Loaded sample ${profile.title} catalog (${profile.products.length} items).`
+        : 'POS workflow and layout adapted.'
+    );
+  };
 
   const handleChange = (field: keyof StoreSettings, value: any) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -467,8 +505,9 @@ export const SettingsView: React.FC = () => {
                           key={item.id}
                           type="button"
                           onClick={() => {
-                            handleChange('businessType', item.id);
-                            handleChange('enableDiningOptions', item.enableDining);
+                            if (formData.businessType !== item.id) {
+                              setPendingBusinessMode(item.id);
+                            }
                           }}
                           className={`p-3 rounded-xl border text-left transition active:scale-[0.98] flex items-start gap-3 cursor-pointer ${
                             isSelected
@@ -1586,6 +1625,14 @@ export const SettingsView: React.FC = () => {
         title="Test Camera Scanner"
         subtitle="Aim at a product barcode to test camera decoding"
         defaultContinuous={true}
+      />
+      {/* Business Mode Switch Confirmation Modal */}
+      <SwitchBusinessModeModal
+        isOpen={Boolean(pendingBusinessMode)}
+        targetMode={pendingBusinessMode}
+        currentMode={formData.businessType}
+        onClose={() => setPendingBusinessMode(null)}
+        onConfirm={handleConfirmBusinessModeSwitch}
       />
     </div>
   );

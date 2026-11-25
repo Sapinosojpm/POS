@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useMemo, useRef, useState, useEffect } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { Plus, Minus, ChevronLeft, ChevronRight, ArrowUpDown, Grid, LayoutGrid, Search } from 'lucide-react';
 import type { Product, Category } from '../types';
@@ -70,6 +70,17 @@ export const ProductCatalog: React.FC<ProductCatalogProps> = ({
     for (const r of rows) map[r.productId] = (map[r.productId] || 0) + r.quantity;
     return map;
   }, []) || {};
+
+  // Auto-reset category filter to 'all' if active category no longer exists in current catalog
+  useEffect(() => {
+    if (
+      selectedCategoryId !== 'all' &&
+      categories.length > 0 &&
+      !categories.some((c) => c.id === selectedCategoryId)
+    ) {
+      setSelectedCategoryId('all');
+    }
+  }, [categories, selectedCategoryId, setSelectedCategoryId]);
 
   const handleSelectCategory = (catId: string) => {
     if (catId === selectedCategoryId) return;

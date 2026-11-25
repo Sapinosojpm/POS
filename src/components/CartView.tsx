@@ -282,12 +282,28 @@ export const CartView: React.FC<CartViewProps> = ({ onOpenCheckout, onClose, onT
                 value={tableLabel}
                 onChange={(e) => setTableLabel(e.target.value)}
                 maxLength={40}
-                placeholder="e.g. Suki Customer / Order note..."
+                placeholder={
+                  settings.businessType === 'SERVICES'
+                    ? 'e.g. Assigned Stylist, Tech Marco, Job #'
+                    : settings.businessType === 'VAPE_SHOP'
+                    ? 'e.g. Customer Name / Warranty Serial'
+                    : 'e.g. Suki Customer / Order note...'
+                }
                 autoFocus
                 className="w-full h-8 px-2.5 rounded-lg bg-white border border-slate-200 text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
           )}
+        </div>
+      )}
+
+      {/* Specialty 18+ Notice for Vape Shops */}
+      {settings.businessType === 'VAPE_SHOP' && (
+        <div className="mt-2 px-2.5 py-1.5 rounded-lg bg-purple-50/80 border border-purple-200/90 text-[10px] text-purple-900 font-bold flex items-center justify-between shrink-0">
+          <span>18+ Statutory Compliance (RA 11900)</span>
+          <span className="bg-purple-200/80 text-purple-900 px-1.5 py-0.5 rounded text-[9px] uppercase tracking-wider">
+            Age Checked
+          </span>
         </div>
       )}
 
@@ -407,9 +423,16 @@ export const CartView: React.FC<CartViewProps> = ({ onOpenCheckout, onClose, onT
                       ✕
                     </button>
                   </div>
-                  {/* Quick Preset Tags */}
+                  {/* Quick Preset Tags (Dynamic per Business Mode) */}
                   <div className="flex flex-wrap gap-1">
-                    {['Less ice', 'No spicy', 'Extra sauce', 'To-go', 'No sugar', 'Well done'].map((chip) => (
+                    {(settings.businessType === 'VAPE_SHOP'
+                      ? ['3mg', '6mg', 'Salt 25mg', 'Salt 50mg', 'Menthol Ice', 'Freebase', '0mg']
+                      : settings.businessType === 'SERVICES'
+                      ? ['Rush Labor', 'Standard', 'Home Service', 'With Warranty', 'Diagnostics']
+                      : settings.businessType === 'RETAIL'
+                      ? ['Fragile', 'Gift Wrap', 'Cold Storage', 'No Plastic', 'Separate Bag']
+                      : ['Less ice', 'No spicy', 'Extra sauce', 'To-go', 'No sugar', 'Well done']
+                    ).map((chip) => (
                       <button
                         key={chip}
                         type="button"

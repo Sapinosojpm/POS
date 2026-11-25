@@ -2,6 +2,7 @@ import React, { useRef, useState, useEffect } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { Search, Bell, Wifi, WifiOff, Scan, PackageOpen, RefreshCw, AlertTriangle, ShoppingBag, Check, Menu, LogOut, Volume2, VolumeX } from 'lucide-react';
 import { useSyncStore } from '../core/sync/syncStore';
+import { useSettingsStore } from '../store/useSettingsStore';
 import { db } from '../core/db';
 import { useAuthStore } from '../store/useAuthStore';
 import { toast } from '../store/useToastStore';
@@ -39,9 +40,18 @@ export const Header: React.FC<HeaderProps> = ({
 }) => {
   const { status, pendingCount } = useSyncStore();
   const { currentUser, logout } = useAuthStore();
+  const businessType = useSettingsStore((state) => state.settings.businessType || 'RETAIL');
   const heldOrdersCount = useLiveQuery(() => db.heldOrders.count(), []) || 0;
   const searchInputRef = useRef<HTMLInputElement>(null);
   const [muted, setMuted] = useState(() => isSoundMuted());
+
+  const businessModeBadges: Record<string, { label: string; badgeClass: string }> = {
+    RETAIL: { label: 'Retail & Grocery', badgeClass: 'bg-emerald-50 text-emerald-800 border-emerald-200' },
+    RESTAURANT: { label: 'Restaurant & Cafe', badgeClass: 'bg-amber-50 text-amber-900 border-amber-200' },
+    VAPE_SHOP: { label: 'Vape Lounge', badgeClass: 'bg-purple-50 text-purple-900 border-purple-200' },
+    SERVICES: { label: 'Services & Salon', badgeClass: 'bg-blue-50 text-blue-900 border-blue-200' },
+  };
+  const activeModeBadge = businessModeBadges[businessType] || businessModeBadges.RETAIL;
 
   // Pro Cashier Hotkey Listener: press '/' or 'F1' to focus search
   useEffect(() => {
@@ -136,6 +146,15 @@ export const Header: React.FC<HeaderProps> = ({
             <span className="sm:hidden">{heldOrdersCount}</span>
           </button>
         )}
+
+        {/* Business Profile Mode Badge */}
+        <div
+          className={`hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-[11px] font-bold shrink-0 ${activeModeBadge.badgeClass}`}
+          title="Active business profile mode (configured in Settings)"
+        >
+          <span className="w-1.5 h-1.5 rounded-full bg-current opacity-70"></span>
+          <span>{activeModeBadge.label}</span>
+        </div>
       </div>
 
       {/* Right Controls: Flag/Currency, Notification, Cashier Profile */}

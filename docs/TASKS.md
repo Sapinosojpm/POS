@@ -205,6 +205,19 @@
 - [x] Updated `CartView.tsx` discount trigger and active badge with sleek typography and zero icon clutter.
 - [x] Verified zero-error build (`npm run build`) and synced to Android (`npx cap sync`).
 
+## Phase 4.20: Dynamic Multi-Industry POS Profiles & Mode Confirmation Gate
+- [x] Built `SwitchBusinessModeModal.tsx` confirmation modal triggered whenever a different business profile card is tapped in `SettingsView.tsx`.
+- [x] Implemented tailored offline catalogs in `src/core/db/seedCatalogs.ts` for all 4 profiles:
+  - `RETAIL`: Supermarket & Grocery (Beverages, Chips, Canned Goods, Pantry, Household) with barcode priority and fast counter flow.
+  - `RESTAURANT`: Restaurant & Cafe (Mains, Burgers, Pasta, Sides, Desserts) with Dine-In / Takeout tabs and Table 1-20 / VIP tracking.
+  - `VAPE_SHOP`: Vape Lounge & Specialty (Pods, Mods, E-Liquids, Coils, Disposables) with 18+ statutory compliance (RA 11900) and nicotine strength tags (`3mg`, `6mg`, `Salt 25mg`, `Menthol Ice`).
+  - `SERVICES`: Services, Salon & Repair (Haircut, Keratin, Massage, Phone Screen Repair, AC Cleaning) with assigned Specialist / Technician tracking.
+- [x] Integrated active Business Profile badge in `Header.tsx` (`Retail & Grocery`, `Restaurant & Cafe`, `Vape Lounge`, `Services & Salon`).
+- [x] Adapted dynamic item instruction chips and customer/specialist reference inputs in `CartView.tsx`.
+- [x] Automatically formatted ESC/POS thermal receipt headers & footers matching the selected industry profile.
+- [x] Added defensive auto-reset to `'all'` category in `ProductCatalog.tsx` when catalog is hot-swapped in Dexie.
+- [x] Verified zero-error build (`npm run build`) and synced to Capacitor Android (`npx cap sync`).
+
 ## Phase 5: PostgreSQL Backend Infrastructure & Sync Gateway
 - [x] Create PostgreSQL schema `sql/postgres_schema.sql` defining relational tables (`branches`, `devices`, `categories`, `products`, `orders`, `order_items`, `shifts`, `stock_ledger`) with UUID keys, indexes, and updated_at triggers.
 - [x] Implement standalone Node.js sync server (`server/index.mjs`) implementing `POST /api/sync/push` (batch idempotent PostgreSQL upserts) and `GET /api/sync/pull` (delta changes since timestamp).
